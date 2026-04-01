@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
 
 const useNotifications = () => {
+  const { user } = useAuth();  // ✅ token check වෙනුවට user state watch කරනවා
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -63,14 +65,20 @@ const useNotifications = () => {
   }, [notifications]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    // ✅ user object එක null නම් කිසිම call එකක් කරන්න එපා
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     fetchNotifications();
     fetchUnreadCount();
-    // Poll every 30 seconds for new notifications
+
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
-  }, [fetchNotifications, fetchUnreadCount]);
+
+  }, [user, fetchNotifications, fetchUnreadCount]); // ✅ user dependency එකතු කළා
 
   return {
     notifications,

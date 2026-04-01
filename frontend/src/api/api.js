@@ -1,39 +1,49 @@
 import axios from 'axios';
 
-const API = axios.create({
+// 1. Axios Instance එක හදන්න
+const api = axios.create({
   baseURL: 'http://localhost:8081/api',
 });
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// 2. Request Interceptor එක - හැම Request එකකටම Token එක එකතු කරයි
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // ─── Auth ──────────────────────────────────────────
-export const getMe = () => API.get('/users/me');
+// දැන් හැම තැනම පාවිච්චි කරන්නේ උඩ හදපු "api" instance එකමයි
+export const getMe = () => api.get('/users/me');
 
 // ─── Notifications ─────────────────────────────────
-export const getNotifications    = ()    => API.get('/notifications');
-export const getUnreadCount      = ()    => API.get('/notifications/count');
-export const markAsRead          = (id)  => API.patch(`/notifications/${id}/read`);
-export const markAllAsRead       = ()    => API.patch('/notifications/read-all');
-export const deleteNotification  = (id) => API.delete(`/notifications/${id}`);
+export const getNotifications    = ()    => api.get('/notifications');
+export const getUnreadCount      = ()    => api.get('/notifications/count');
+export const markAsRead          = (id)  => api.patch(`/notifications/${id}/read`);
+export const markAllAsRead       = ()    => api.patch('/notifications/read-all');
+export const deleteNotification  = (id)  => api.delete(`/notifications/${id}`);
 
 // ─── Users / Admin ─────────────────────────────────
-export const getAllUsers     = ()            => API.get('/users');           // ✅ fixed
-export const updateUserRole = (id, role)    => API.put(`/users/${id}/roles`, { roles: [role] }); // ✅ fixed
+export const getAllUsers         = ()            => api.get('/users');
+export const updateUserRole      = (id, role)    => api.put(`/users/${id}/roles`, { roles: [role] });
 
 // ─── Resources ─────────────────────────────────────
-export const getResources    = ()         => API.get('/resources');
-export const createResource  = (data)     => API.post('/resources', data);
-export const updateResource  = (id, data) => API.put(`/resources/${id}`, data);
-export const deleteResource  = (id)       => API.delete(`/resources/${id}`);
+export const getResources        = ()         => api.get('/resources');
+export const createResource      = (data)     => api.post('/resources', data);
+export const updateResource      = (id, data) => api.put(`/resources/${id}`, data);
+export const deleteResource      = (id)       => api.delete(`/resources/${id}`);
 
 // ─── Bookings ──────────────────────────────────────
-export const getBookings    = ()          => API.get('/bookings');
-export const createBooking  = (data)      => API.post('/bookings', data);
-export const updateBooking  = (id, data)  => API.put(`/bookings/${id}`, data);
-export const deleteBooking  = (id)        => API.delete(`/bookings/${id}`);
+export const getBookings         = ()          => api.get('/bookings');
+export const createBooking       = (data)      => api.post('/bookings', data);
+export const updateBooking       = (id, data)  => api.put(`/bookings/${id}`, data);
+export const deleteBooking       = (id)        => api.delete(`/bookings/${id}`);
 
-export default API;
+export default api;

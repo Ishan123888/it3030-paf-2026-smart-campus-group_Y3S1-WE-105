@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Document(collection = "users")
@@ -20,7 +21,8 @@ public class User {
     private String picture;
     private String googleId;
 
-    private Set<String> roles; // e.g., ROLE_USER, ROLE_ADMIN, ROLE_TECHNICIAN
+    // ✅ Supports multiple roles: ROLE_USER, ROLE_ADMIN, ROLE_TECHNICIAN
+    private Set<String> roles;
 
     private LocalDateTime createdAt;
     private LocalDateTime lastLogin;
@@ -35,10 +37,12 @@ public class User {
         this.googleId = googleId;
         this.createdAt = LocalDateTime.now();
         this.lastLogin = LocalDateTime.now();
-        this.roles = Set.of("ROLE_USER");
+        // ✅ Use HashSet so roles are mutable (important for later add/remove)
+        this.roles = new HashSet<>(Set.of("ROLE_USER"));
     }
 
-    // Getters and Setters
+    // ── Getters & Setters ──────────────────────────────────────────────────
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

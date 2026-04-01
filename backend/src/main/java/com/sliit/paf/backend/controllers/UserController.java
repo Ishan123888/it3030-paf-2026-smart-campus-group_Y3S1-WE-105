@@ -21,39 +21,51 @@ public class UserController {
         this.userService = userService;
     }
 
-    // ✅ FIXED: Handled Null Principal to prevent 500 Error
+    /**
+     * GET /api/users/me
+     * Returns the currently authenticated user's profile.
+     *
+     * ✅ FIX: Now protected by .authenticated() in SecurityConfig.
+     * Principal will never be null here — Spring Security enforces it.
+     * A 401 is returned automatically if no valid JWT is provided.
+     */
     @GetMapping("/me")
-    public ResponseEntity<?> getMyProfile(Principal principal) {
-        if (principal == null) {
-            // Return a safe response for unauthenticated users
-            return ResponseEntity.ok().body(Map.of(
-                "authenticated", false,
-                "name", "Guest User",
-                "roles", List.of("ROLE_GUEST")
-            ));
-        }
-        
+    public ResponseEntity<UserDTO> getMyProfile(Principal principal) {
         UserDTO user = userService.getUserByEmail(principal.getName());
         return ResponseEntity.ok(user);
     }
 
+    /**
+     * GET /api/users
+     * Returns all users — ADMIN only.
+     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    /**
+     * GET /api/users/{id}
+     * Returns a single user by ID — ADMIN only.
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    /**
+     * PUT /api/users/{id}/roles
+     * Update a user's roles — ADMIN only.
+     * Body: { "roles": ["ROLE_USER", "ROLE_ADMIN"] }
+     */
     @PutMapping("/{id}/roles")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> updateRoles(
             @PathVariable String id,
             @RequestBody Map<String, Set<String>> body) {
+
         Set<String> roles = body.get("roles");
         if (roles == null || roles.isEmpty()) {
             return ResponseEntity.badRequest().build();
@@ -61,12 +73,20 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUserRoles(id, roles));
     }
 
+    /**
+     * PATCH /api/users/{id}/toggle-active
+     * Enable or disable a user account — ADMIN only.
+     */
     @PatchMapping("/{id}/toggle-active")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> toggleActive(@PathVariable String id) {
         return ResponseEntity.ok(userService.toggleUserActive(id));
     }
 
+    /**
+     * DELETE /api/users/{id}
+     * Delete a user permanently — ADMIN only.
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> deleteUser(@PathVariable String id) {
