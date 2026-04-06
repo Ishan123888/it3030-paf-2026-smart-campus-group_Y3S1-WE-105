@@ -20,24 +20,32 @@ public class User {
     private String name;
     private String picture;
     private String googleId;
+    
+    // Local login (Username/Password) walata avashya fields
+    private String password;
+    private String provider; // "google" hari "local" hari kiyala save karanna
 
-    // ✅ Supports multiple roles: ROLE_USER, ROLE_ADMIN, ROLE_TECHNICIAN
+    // ✅ Supports multiple roles: ROLE_USER, ROLE_ADMIN, ROLE_STAFF
     private Set<String> roles;
 
     private LocalDateTime createdAt;
     private LocalDateTime lastLogin;
     private boolean active = true;
 
-    public User() {}
+    public User() {
+        this.createdAt = LocalDateTime.now();
+        this.roles = new HashSet<>();
+    }
 
+    // Google OAuth2 login constructor
     public User(String email, String name, String picture, String googleId) {
         this.email = email;
         this.name = name;
         this.picture = picture;
         this.googleId = googleId;
+        this.provider = "google";
         this.createdAt = LocalDateTime.now();
         this.lastLogin = LocalDateTime.now();
-        // ✅ Use HashSet so roles are mutable (important for later add/remove)
         this.roles = new HashSet<>(Set.of("ROLE_USER"));
     }
 
@@ -69,4 +77,21 @@ public class User {
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+
+    // Fixed implemented methods
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getPassword() {
+        return this.password;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getProvider() {
+        return this.provider;
+    }
 }

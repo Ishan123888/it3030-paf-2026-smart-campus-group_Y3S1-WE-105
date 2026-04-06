@@ -23,6 +23,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -64,6 +66,7 @@ public class SecurityConfig {
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
+    // OAuth2 user login weddi JWT generate karanna (Google login flow)
     public String generateToken(OAuth2User oauthUser) {
         String email = oauthUser.getAttribute("email");
 
@@ -74,11 +77,11 @@ public class SecurityConfig {
                 .collect(Collectors.toList());
 
         if (roles.isEmpty()) {
-            log.warn("No app roles found for {} — falling back to ROLE_USER", email);
+            log.warn("No roles found for {} - falling back to ROLE_USER", email);
             roles.add("ROLE_USER");
         }
 
-        log.info("### Generating JWT | User: {} | Assigned Roles: {} ###", email, roles);
+        log.info("Generating JWT for: {} | Roles: {}", email, roles);
 
         return Jwts.builder()
                 .setSubject(email)
@@ -89,6 +92,28 @@ public class SecurityConfig {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // Username/Password login weddi JWT generate karanna (local login flow)
+    public String generateTokenForLocalUser(String email, Set<String> roles, String name) {
+        List<String> roleList = new ArrayList<>(roles);
+
+        log.info("Generating JWT for local user: {} | Roles: {}", email, roleList);
+
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("roles", roleList)
+                .claim("name", name)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // BCrypt password encoder bean
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     private OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver() {
@@ -128,10 +153,17 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Auth endpoints (register, login) - public
+                .requestMatchers("/api/auth/**").permitAll()
+                // OAuth2 endpoints - public
                 .requestMatchers("/oauth2/**", "/login/**", "/error").permitAll()
+                // Resources GET - public
                 .requestMatchers(HttpMethod.GET, "/api/resources/**").permitAll()
+                // Notifications - authenticated users only
                 .requestMatchers("/api/notifications/**").authenticated()
+                // Current user profile - authenticated
                 .requestMatchers("/api/users/me").authenticated()
+                // User management - ADMIN only
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
@@ -156,21 +188,20 @@ public class SecurityConfig {
                 .authorizationEndpoint(endpoint ->
                     endpoint.authorizationRequestResolver(customAuthorizationRequestResolver())
                 )
-                // ✅ FIXED: Using the injected customOAuth2UserService
                 .userInfoEndpoint(info -> info.userService(customOAuth2UserService))
                 .successHandler((request, response, authentication) -> {
                     try {
                         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
-                        log.info("### SuccessHandler | Authorities: {} ###", oauthUser.getAuthorities());
+                        log.info("OAuth2 login success. Authorities: {}", oauthUser.getAuthorities());
                         String token = generateToken(oauthUser);
                         response.sendRedirect("http://localhost:3000/oauth-callback?token=" + token);
                     } catch (Exception e) {
-                        log.error("### SuccessHandler Error ###", e);
+                        log.error("OAuth2 SuccessHandler error", e);
                         response.sendRedirect("http://localhost:3000/login?error=auth_error");
                     }
                 })
                 .failureHandler((request, response, exception) -> {
-                    log.error("### OAuth2 Login Failed: {} ###", exception.getMessage());
+                    log.error("OAuth2 Login Failed: {}", exception.getMessage());
                     response.sendRedirect("http://localhost:3000/login?error=oauth_failed");
                 })
             )
