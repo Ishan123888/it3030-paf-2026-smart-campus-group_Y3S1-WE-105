@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getAllUsers, updateUserRole } from "../api/api";
-import Navbar from "../components/common/Navbar";
+import BackgroundSlideshow, { toImgurDirect } from "../components/common/BackgroundSlideshow";
+
+const DASH_BG = [toImgurDirect("https://imgur.com/t4yWwhI")];
 
 const ROLES = ["ROLE_USER", "ROLE_ADMIN", "ROLE_TECHNICIAN"];
 
@@ -45,9 +47,8 @@ export default function AdminPanel() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#060812", paddingTop: 60,
-                  fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar />
+    <BackgroundSlideshow slides={DASH_BG} className="min-h-screen pt-16">
+      <div style={{ minHeight: "100vh", backgroundColor: "transparent", paddingTop: 24, fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ padding: "32px", maxWidth: "1000px", margin: "0 auto" }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ margin: "0 0 8px 0", color: "#e8ecff", fontSize: 28, fontWeight: 800 }}>
@@ -67,9 +68,11 @@ export default function AdminPanel() {
         {/* Role count cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
           {ROLES.map(role => (
-            <div key={role} style={{
-              background: "rgba(13,17,32,0.9)", border: "1px solid rgba(99,130,255,0.15)",
-              borderRadius: 12, padding: 16, textAlign: "center"
+            <div key={role} className="card-3d" style={{
+              background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.14)",
+              borderRadius: 14, padding: 16, textAlign: "center",
+              backdropFilter: "blur(14px)",
+              boxShadow: "0 18px 60px rgba(0,0,0,0.22)"
             }}>
               <div style={{ fontSize: 28, fontWeight: 800, color: roleColors[role]?.color }}>
                 {users.filter(u => (u.roles?.includes(role) || u.role === role)).length}
@@ -79,16 +82,18 @@ export default function AdminPanel() {
           ))}
         </div>
 
-        <div style={{
-          background: "rgba(13,17,32,0.9)", border: "1px solid rgba(99,130,255,0.15)",
-          borderRadius: 12, overflow: "hidden"
+        <div className="card-3d" style={{
+          background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: 16, overflow: "hidden",
+          backdropFilter: "blur(14px)",
+          boxShadow: "0 18px 70px rgba(0,0,0,0.26)"
         }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: "center", color: "#6b7599" }}>Loading users...</div>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+                <tr style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
                   {["User", "Email", "Roles", "Change Role"].map(h => (
                     <th key={h} style={{ padding: "14px 16px", textAlign: "left",
                       fontSize: 12, fontWeight: 700, color: "#6b7599",
@@ -99,8 +104,8 @@ export default function AdminPanel() {
               <tbody>
                 {users.map((u, idx) => (
                   <tr key={u.id} style={{
-                    borderTop: "1px solid rgba(255,255,255,0.05)",
-                    backgroundColor: idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)"
+                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                    backgroundColor: idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.03)"
                   }}>
                     <td style={{ padding: "14px 16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -127,9 +132,9 @@ export default function AdminPanel() {
                         disabled={updating === u.id}
                         style={{
                           padding: "6px 12px", borderRadius: 6,
-                          border: "1px solid rgba(99,130,255,0.3)",
+                          border: "1px solid rgba(255,255,255,0.18)",
                           cursor: "pointer", fontSize: 13,
-                          backgroundColor: "#0d1120", color: "#e8ecff"
+                          backgroundColor: "rgba(0,0,0,0.35)", color: "#e8ecff"
                         }}
                       >
                         {ROLES.map(role => (
@@ -144,6 +149,7 @@ export default function AdminPanel() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </BackgroundSlideshow>
   );
 }
