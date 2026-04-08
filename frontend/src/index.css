@@ -1,3 +1,73 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap');
+
+:root {
+  --bg: #060812;
+  --surface: #0d1120;
+  --border: rgba(99, 130, 255, 0.18);
+  --accent: #4f6fff;
+  --accent2: #00e5c3;
+  --accent3: #ff5b8d;
+  --text: #e8ecff;
+  --muted: #6b7599;
+  --glow: rgba(79, 111, 255, 0.35);
+  color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  --bg: #f7f8ff;
+  --surface: #ffffff;
+  --border: rgba(15, 23, 42, 0.14);
+  --accent: #3b82f6;
+  --accent2: #06b6d4;
+  --accent3: #ec4899;
+  --text: #0b1020;
+  --muted: #475569;
+  --glow: rgba(59, 130, 246, 0.22);
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Home hero slideshow */
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+  transition: opacity 0.85s cubic-bezier(.4,0,.2,1), transform 0.85s cubic-bezier(.4,0,.2,1);
+}
+.hero-slide.enter {
+  opacity: 0;
+  transform: translateX(-6%) scale(1.04);
+}
+.hero-slide.active {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+.hero-slide.exit {
+  opacity: 0;
+  transform: translateX(6%) scale(1.01);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide {
+    transition: none;
+  }
+}
+
+/* Subtle 3D interactions */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.card-3d:hover {
+  transform: translateY(-6px) rotateX(2deg) rotateY(-2deg);
+}
