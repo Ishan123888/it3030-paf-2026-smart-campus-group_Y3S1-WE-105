@@ -22,9 +22,9 @@ function AppLayout() {
   const hideLayout = ['/login', '/oauth-callback'].includes(location.pathname);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: "#060812" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: "var(--bg)", color: "var(--text)" }}>
       {!hideLayout && <Navbar />}
-      <main style={{ flexGrow: 1 }}>
+      <main id="main-content" style={{ flexGrow: 1, paddingTop: hideLayout ? 0 : 64 }}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
