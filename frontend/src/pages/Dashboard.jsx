@@ -24,7 +24,7 @@ export default function Dashboard() {
 
   const actions = [
     { id: 1, label: "My Bookings",  icon: "📅", path: "/dashboard/bookings",  color: "#4f6fff", show: isAuthenticated },
-    { id: 2, label: "Incidents",    icon: "🔧", path: "/dashboard/incidents", color: "#ff5b8d", show: isAuthenticated },
+    { id: 2, label: "Incidents",    icon: "🔧", path: "/dashboard/incidents", color: "#ff5b8d", show: isAuthenticated && !isAdmin() },
     { id: 3, label: "Resources",    icon: "🏛️", path: "/dashboard/resources", color: "#00e5c3", show: true },
     { id: 4, label: "Admin Panel",  icon: "⚙️", path: "/admin",               color: "#f59e0b", show: isAdmin() },
     { id: 5, label: "Staff Portal", icon: "👨‍🏫", path: "/staff",               color: "#8b5cf6", show: isStaff() },
