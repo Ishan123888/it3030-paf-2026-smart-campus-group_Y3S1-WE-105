@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import OAuthCallback from './pages/OAuthCallback';
 import Dashboard from './pages/Dashboard';
+import Incidents from './pages/Incidents';
 import AdminPanel from './pages/AdminPanel';
 import UserManagement from './pages/admin/UserManagement';
 import Contact from './pages/Contact';
@@ -36,6 +37,18 @@ function AppLayout() {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/incidents" element={
+            <ProtectedRoute>
+              <Incidents />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/incidents" element={
+            <ProtectedRoute requiredRole="ROLE_ADMIN">
+              <Incidents />
             </ProtectedRoute>
           } />
 

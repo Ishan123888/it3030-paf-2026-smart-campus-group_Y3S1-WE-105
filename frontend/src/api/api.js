@@ -46,4 +46,25 @@ export const createBooking       = (data)      => api.post('/bookings', data);
 export const updateBooking       = (id, data)  => api.put(`/bookings/${id}`, data);
 export const deleteBooking       = (id)        => api.delete(`/bookings/${id}`);
 
+// ─── Incidents ─────────────────────────────────────
+export const getIncidents            = () => api.get('/incidents');
+export const getIncidentById         = (id) => api.get(`/incidents/${id}`);
+export const getIncidentAssignees    = () => api.get('/incidents/assignees');
+export const assignIncident          = (id, assigneeEmail) => api.patch(`/incidents/${id}/assign`, { assigneeEmail });
+export const updateIncidentStatus    = (id, payload) => api.patch(`/incidents/${id}/status`, payload);
+export const addIncidentComment      = (id, content) => api.post(`/incidents/${id}/comments`, { content });
+export const updateIncidentComment   = (id, commentId, content) => api.put(`/incidents/${id}/comments/${commentId}`, { content });
+export const deleteIncidentComment   = (id, commentId) => api.delete(`/incidents/${id}/comments/${commentId}`);
+
+export const createIncident = (payload, files = []) => {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      formData.append(key, value);
+    }
+  });
+  files.slice(0, 3).forEach((file) => formData.append('attachments', file));
+  return api.post('/incidents', formData);
+};
+
 export default api;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAllUsers, updateUserRole } from "../api/api";
+import { useNavigate } from "react-router-dom";
 import BackgroundSlideshow, { toImgurDirect } from "../components/common/BackgroundSlideshow";
 
 const DASH_BG = [toImgurDirect("https://imgur.com/t4yWwhI")];
@@ -13,6 +14,7 @@ const roleColors = {
 };
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
@@ -55,6 +57,23 @@ export default function AdminPanel() {
             👥 User Management
           </h1>
           <p style={{ color: "#6b7599", margin: 0 }}>Manage user roles and permissions</p>
+          <div style={{ marginTop: 12 }}>
+            <button
+              onClick={() => navigate("/admin/incidents")}
+              style={{
+                border: "1px solid rgba(79,111,255,0.35)",
+                background: "rgba(79,111,255,0.12)",
+                color: "#cdd7ff",
+                borderRadius: 10,
+                padding: "10px 14px",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              Open Incident Management
+            </button>
+          </div>
         </div>
 
         {message && (

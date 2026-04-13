@@ -13,13 +13,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
-        HttpStatus status = ex.getMessage().contains("not found") ? HttpStatus.NOT_FOUND :
-                            ex.getMessage().contains("Unauthorized") ? HttpStatus.FORBIDDEN :
+        String message = ex.getMessage() == null ? "Runtime error" : ex.getMessage();
+        HttpStatus status = message.contains("not found") ? HttpStatus.NOT_FOUND :
+                            message.contains("Unauthorized") ? HttpStatus.FORBIDDEN :
                             HttpStatus.BAD_REQUEST;
         return ResponseEntity.status(status).body(Map.of(
                 "timestamp", LocalDateTime.now().toString(),
                 "error", status.getReasonPhrase(),
-                "message", ex.getMessage()
+                "message", message
         ));
     }
 
