@@ -10,11 +10,11 @@ import com.sliit.paf.backend.repository.ResourceRepository;
 import com.sliit.paf.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,20 +60,23 @@ public class BookingService {
 
     public List<BookingDTO> getMyBookings(String userEmail, String status, String resourceId, String bookingDate) {
         return bookingRepository.findByUserEmailOrderByCreatedAtDesc(userEmail).stream()
+                .filter(Objects::nonNull)
                 .filter(booking -> matchesFilters(booking, status, resourceId, bookingDate))
-                .sorted(Comparator.comparing(Booking::getBookingDate).reversed()
-                        .thenComparing(Booking::getStartTime)
-                        .thenComparing(Booking::getCreatedAt).reversed())
+                .sorted(Comparator.comparing(Booking::getBookingDate, Comparator.nullsLast(Comparator.naturalOrder())).reversed()
+                        .thenComparing(Booking::getStartTime, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Booking::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
     public List<BookingDTO> getAllBookings(String status, String resourceId, String bookingDate, String userEmail) {
         return bookingRepository.findAll().stream()
+                .filter(Objects::nonNull)
                 .filter(booking -> matchesFilters(booking, status, resourceId, bookingDate))
                 .filter(booking -> userEmail == null || userEmail.isBlank()
-                        || booking.getUserEmail().toLowerCase(Locale.ROOT).contains(userEmail.toLowerCase(Locale.ROOT)))
-                .sorted(Comparator.comparing(Booking::getCreatedAt).reversed())
+                        || (booking.getUserEmail() != null
+                        && booking.getUserEmail().toLowerCase(Locale.ROOT).contains(userEmail.toLowerCase(Locale.ROOT))))
+                .sorted(Comparator.comparing(Booking::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
@@ -148,11 +151,11 @@ public class BookingService {
 
     private boolean matchesFilters(Booking booking, String status, String resourceId, String bookingDate) {
         boolean matchesStatus = status == null || status.isBlank()
-                || booking.getStatus().name().equalsIgnoreCase(status);
+                || (booking.getStatus() != null && booking.getStatus().name().equalsIgnoreCase(status));
         boolean matchesResource = resourceId == null || resourceId.isBlank()
-                || booking.getResourceId().equals(resourceId);
+                || resourceId.equals(booking.getResourceId());
         boolean matchesDate = bookingDate == null || bookingDate.isBlank()
-                || booking.getBookingDate().toString().equals(bookingDate);
+                || (booking.getBookingDate() != null && booking.getBookingDate().toString().equals(bookingDate));
         return matchesStatus && matchesResource && matchesDate;
     }
 
@@ -211,7 +214,7 @@ public class BookingService {
     }
 
     private void ensureOwner(Booking booking, String userEmail) {
-        if (!booking.getUserEmail().equalsIgnoreCase(userEmail)) {
+        if (booking.getUserEmail() == null || !booking.getUserEmail().equalsIgnoreCase(userEmail)) {
             throw new RuntimeException("Unauthorized booking access.");
         }
     }
