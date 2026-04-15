@@ -45,10 +45,13 @@ export const toggleResourceStatus = (id)     => api.patch(`/resources/${id}/stat
 export const deleteResource       = (id)     => api.delete(`/resources/${id}`);
 
 // ─── Bookings ──────────────────────────────────────
-export const getBookings         = ()          => api.get('/bookings');
-export const createBooking       = (data)      => api.post('/bookings', data);
-export const updateBooking       = (id, data)  => api.put(`/bookings/${id}`, data);
-export const deleteBooking       = (id)        => api.delete(`/bookings/${id}`);
+export const getMyBookings       = (params)              => api.get('/bookings/my', { params });
+export const getAllBookings      = (params)              => api.get('/bookings', { params });
+export const createBooking       = (data)                => api.post('/bookings', data);
+export const cancelBooking       = (id)                  => api.patch(`/bookings/${id}/cancel`);
+export const rescheduleBooking   = (id, data)            => api.put(`/bookings/${id}/reschedule`, data);
+export const approveBooking      = (id)                  => api.patch(`/bookings/${id}/approve`);
+export const rejectBooking       = (id, reason)          => api.patch(`/bookings/${id}/reject`, { reason });
 
 // ─── Incidents ─────────────────────────────────────
 export const getIncidents            = () => api.get('/incidents');

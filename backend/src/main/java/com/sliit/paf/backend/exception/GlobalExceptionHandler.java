@@ -1,7 +1,10 @@
 package com.sliit.paf.backend.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,6 +15,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
@@ -34,6 +39,25 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleNotReadable(HttpMessageNotReadableException ex) {
+        String message = "Invalid request format. Please check date and time values.";
+        if (ex.getMostSpecificCause() != null && ex.getMostSpecificCause().getMessage() != null) {
+            String causeMessage = ex.getMostSpecificCause().getMessage();
+            if (causeMessage.contains("LocalDate")) {
+                message = "Invalid booking date format.";
+            } else if (causeMessage.contains("LocalTime")) {
+                message = "Invalid start time or end time format.";
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "timestamp", LocalDateTime.now().toString(),
+                "error", "Bad Request",
+                "message", message
+        ));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
         HttpStatus status = (ex.getMessage() != null && ex.getMessage().contains("Unauthorized"))
@@ -48,6 +72,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+        log.error("Unhandled server error", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "timestamp", LocalDateTime.now().toString(),
                 "error", "Internal Server Error",

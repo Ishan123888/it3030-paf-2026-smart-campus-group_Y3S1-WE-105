@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { getResources } from "../api/api";
 import ResourceCard from "../components/resources/ResourceCard";
 import ResourceDetailModal from "../components/resources/ResourceDetailModal";
+import { useAuth } from "../context/AuthContext";
 
 const RESOURCE_TYPES = [
   "LECTURE_HALL", "LAB", "MEETING_ROOM",
@@ -12,6 +14,8 @@ const RESOURCE_TYPES = [
 const BRANDS = ["Brand 1", "Brand 2", "Brand 3"];
 
 export default function ResourcesPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [selected, setSelected]   = useState(null);
@@ -171,7 +175,12 @@ export default function ResourcesPage() {
       </div>
 
       {selected && (
-        <ResourceDetailModal resource={selected} onClose={() => setSelected(null)} />
+        <ResourceDetailModal
+          resource={selected}
+          onClose={() => setSelected(null)}
+          canBook={!!user}
+          onBook={(selectedResourceId) => navigate(`/dashboard/bookings/new/${selectedResourceId}`)}
+        />
       )}
     </div>
   );

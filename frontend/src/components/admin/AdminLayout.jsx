@@ -4,12 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import {
   IconLayoutDashboard, IconResource, IconUsers,
   IconAlertTriangle, IconLogOut, IconMenu, IconX, IconChevronRight,
-  IconUserEdit, IconUserPlus,
+  IconUserEdit, IconUserPlus, IconCalendar,
 } from '../common/Icons';
 
 const NAV_ITEMS = [
   { to: '/admin',           icon: IconLayoutDashboard, label: 'Overview',       exact: true },
   { to: '/admin/resources', icon: IconResource,        label: 'Resources'       },
+  { to: '/admin/bookings',  icon: IconCalendar,        label: 'Bookings'        },
   { to: '/admin/users',     icon: IconUsers,           label: 'User Management' },
   { to: '/admin/incidents', icon: IconAlertTriangle,   label: 'Incidents'       },
   { to: '/admin/add-admin', icon: IconUserPlus,        label: 'Add Admin'       },

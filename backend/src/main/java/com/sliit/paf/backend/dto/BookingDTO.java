@@ -1,34 +1,24 @@
-package com.sliit.paf.backend.models;
+package com.sliit.paf.backend.dto;
 
+import com.sliit.paf.backend.models.Booking;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-@Document(collection = "bookings")
-public class Booking {
+public class BookingDTO {
 
-    @Id
     private String id;
 
     @NotBlank(message = "Resource id is required")
     private String resourceId;
 
-    @NotBlank(message = "Resource name is required")
     private String resourceName;
-
-    @NotBlank(message = "User id is required")
     private String userId;
-
-    @NotBlank(message = "User name is required")
     private String userName;
-
-    @NotBlank(message = "User email is required")
     private String userEmail;
 
     @NotNull(message = "Booking date is required")
@@ -43,22 +33,16 @@ public class Booking {
     @NotBlank(message = "Purpose is required")
     private String purpose;
 
+    @NotNull(message = "Expected attendees is required")
     @Min(value = 1, message = "Expected attendees must be at least 1")
     private Integer expectedAttendees;
 
-    private BookingStatus status = BookingStatus.PENDING;
+    private Booking.BookingStatus status;
     private String adminReason;
     private String reviewedBy;
     private LocalDateTime reviewedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    public enum BookingStatus {
-        PENDING,
-        APPROVED,
-        REJECTED,
-        CANCELLED
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -93,8 +77,8 @@ public class Booking {
     public Integer getExpectedAttendees() { return expectedAttendees; }
     public void setExpectedAttendees(Integer expectedAttendees) { this.expectedAttendees = expectedAttendees; }
 
-    public BookingStatus getStatus() { return status; }
-    public void setStatus(BookingStatus status) { this.status = status; }
+    public Booking.BookingStatus getStatus() { return status; }
+    public void setStatus(Booking.BookingStatus status) { this.status = status; }
 
     public String getAdminReason() { return adminReason; }
     public void setAdminReason(String adminReason) { this.adminReason = adminReason; }

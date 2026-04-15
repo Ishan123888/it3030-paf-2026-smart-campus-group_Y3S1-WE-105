@@ -9,7 +9,6 @@ import AdminLogin from './pages/AdminLogin';
 import OAuthCallback from './pages/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 import Incidents from './pages/Incidents';
-import AdminPanel from './pages/AdminPanel';
 import UserManagement from './pages/admin/UserManagement';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminIncidentsPage from './pages/admin/AdminIncidentsPage';
@@ -18,6 +17,9 @@ import AddAdmin from './pages/admin/AddAdmin';
 import ResourcesPage from './pages/ResourcesPage';
 import AdminResourcesPage from './pages/AdminResourcesPage';
 import Contact from './pages/Contact';
+import StudentBookingsPage from './pages/StudentBookingsPage';
+import StudentBookingFormPage from './pages/StudentBookingFormPage';
+import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
@@ -59,9 +61,33 @@ function AppLayout() {
             </ProtectedRoute>
           } />
 
+          <Route path="/dashboard/bookings" element={
+            <ProtectedRoute>
+              <StudentBookingsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/bookings/new/:resourceId" element={
+            <ProtectedRoute>
+              <StudentBookingFormPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard/bookings/:bookingId/reschedule" element={
+            <ProtectedRoute>
+              <StudentBookingFormPage />
+            </ProtectedRoute>
+          } />
+
           <Route path="/admin/incidents" element={
             <ProtectedRoute requiredRole="ROLE_ADMIN">
               <AdminIncidentsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/bookings" element={
+            <ProtectedRoute requiredRole="ROLE_ADMIN">
+              <AdminBookingsPage />
             </ProtectedRoute>
           } />
 

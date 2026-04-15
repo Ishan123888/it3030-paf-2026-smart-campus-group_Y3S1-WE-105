@@ -16,7 +16,7 @@ const TYPE_COLORS = {
 
 const CURRENCIES = { LKR: "Rs", USD: "$" };
 
-export default function ResourceDetailModal({ resource, onClose }) {
+export default function ResourceDetailModal({ resource, onClose, onBook, canBook = false }) {
   if (!resource) return null;
 
   const isActive  = resource.status === "ACTIVE";
@@ -161,6 +161,20 @@ export default function ResourceDetailModal({ resource, onClose }) {
           >
             Close
           </button>
+          {canBook && resource.status === "ACTIVE" && (
+            <button
+              onClick={() => onBook?.(resource.id)}
+              style={{
+                width: "100%", marginTop: 10, padding: "12px",
+                background: "#0f172a",
+                border: "none", borderRadius: 10, color: "#fff",
+                fontSize: 14, fontWeight: 700, cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Book This Resource
+            </button>
+          )}
         </div>
       </div>
     </div>
