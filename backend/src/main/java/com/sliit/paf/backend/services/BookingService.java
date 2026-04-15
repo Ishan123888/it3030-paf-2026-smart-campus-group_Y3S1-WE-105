@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,7 +56,9 @@ public class BookingService {
         booking.setCreatedAt(LocalDateTime.now());
         booking.setUpdatedAt(LocalDateTime.now());
 
-        return toDTO(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        notifyAdminsOfNewBooking(saved);
+        return toDTO(saved);
     }
 
     public List<BookingDTO> getMyBookings(String userEmail, String status, String resourceId, String bookingDate) {
@@ -216,6 +219,23 @@ public class BookingService {
     private void ensureOwner(Booking booking, String userEmail) {
         if (booking.getUserEmail() == null || !booking.getUserEmail().equalsIgnoreCase(userEmail)) {
             throw new RuntimeException("Unauthorized booking access.");
+        }
+    }
+
+    private void notifyAdminsOfNewBooking(Booking booking) {
+        Set<String> adminEmails = userRepository.findAll().stream()
+                .filter(user -> user.getRoles() != null && user.getRoles().contains("ROLE_ADMIN"))
+                .map(User::getEmail)
+                .collect(Collectors.toSet());
+
+        for (String adminEmail : adminEmails) {
+            notificationService.createNotification(adminEmail,
+                    "BOOKING_REQUESTED",
+                    "New Booking Request",
+                    "A new booking request was created for " + booking.getResourceName() +
+                            " on " + booking.getBookingDate() + ".",
+                    booking.getId(),
+                    "BOOKING");
         }
     }
 

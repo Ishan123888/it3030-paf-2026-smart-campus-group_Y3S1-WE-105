@@ -39,6 +39,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,7 +67,7 @@ public class SecurityConfig {
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    // OAuth2 user login weddi JWT generate karanna (Google login flow)
+    /** Generate JWT for Google OAuth2 login */
     public String generateToken(OAuth2User oauthUser) {
         String email = oauthUser.getAttribute("email");
 
@@ -94,10 +95,9 @@ public class SecurityConfig {
                 .compact();
     }
 
-    // Username/Password login weddi JWT generate karanna (local login flow)
+    /** Generate JWT for local username/password login */
     public String generateTokenForLocalUser(String email, Set<String> roles, String name) {
         List<String> roleList = new ArrayList<>(roles);
-
         log.info("Generating JWT for local user: {} | Roles: {}", email, roleList);
 
         return Jwts.builder()
@@ -110,7 +110,6 @@ public class SecurityConfig {
                 .compact();
     }
 
-    // BCrypt password encoder bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -153,22 +152,35 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Auth endpoints (register, login) - public
+                // ── Public: auth ──────────────────────────────────────────────────
                 .requestMatchers("/api/auth/**").permitAll()
-                // OAuth2 endpoints - public
+                // ── Public: OAuth2 ────────────────────────────────────────────────
                 .requestMatchers("/oauth2/**", "/login/**", "/error").permitAll()
-                // Resources GET - public
+                // ── Public: resource browsing (GET only) ──────────────────────────
                 .requestMatchers(HttpMethod.GET, "/api/resources/**").permitAll()
-                .requestMatchers("/api/resources/**").permitAll()
+                // ── Public: dashboard stats ───────────────────────────────────────
                 .requestMatchers("/api/dashboard/**").permitAll()
-                // Current user profile - authenticated
-                .requestMatchers("/api/users/me").authenticated()
+                // ── Authenticated: own profile (GET + PUT) ────────────────────────
+                .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
+                // ── Debug (permit all for dev) ────────────────────────────────────
                 .requestMatchers("/api/users/debug-auth").permitAll()
-                // Notifications - authenticated users only
+                // ── Authenticated: notifications ──────────────────────────────────
                 .requestMatchers("/api/notifications/**").authenticated()
-                // User management - ADMIN only
+                // ── Authenticated: bookings (student creates/views own) ───────────
+                .requestMatchers(HttpMethod.GET,   "/api/bookings/my").authenticated()
+                .requestMatchers(HttpMethod.POST,  "/api/bookings").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").authenticated()
+                .requestMatchers(HttpMethod.PUT,   "/api/bookings/*/reschedule").authenticated()
+                // ── Authenticated: incidents (students can create + view own) ─────
+                .requestMatchers("/api/incidents/**").authenticated()
+                // ── Admin only ────────────────────────────────────────────────────
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET,   "/api/bookings").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/approve").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/reject").hasRole("ADMIN")
+                // ── Everything else requires auth ─────────────────────────────────
                 .anyRequest().authenticated()
             )
             .exceptionHandling(handling -> handling
@@ -197,7 +209,8 @@ public class SecurityConfig {
                         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
                         log.info("OAuth2 login success. Authorities: {}", oauthUser.getAuthorities());
                         String token = generateToken(oauthUser);
-                        response.sendRedirect("http://localhost:3000/oauth-callback?token=" + token);
+                        String redirectUrl = "http://localhost:3000/oauth-callback?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+                        response.sendRedirect(redirectUrl);
                     } catch (Exception e) {
                         log.error("OAuth2 SuccessHandler error", e);
                         response.sendRedirect("http://localhost:3000/login?error=auth_error");

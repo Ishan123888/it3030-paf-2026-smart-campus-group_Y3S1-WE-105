@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public class NotificationDTO {
     private String id;
+    private String userId;
     private String type;
     private String title;
     private String message;
@@ -14,10 +15,11 @@ public class NotificationDTO {
 
     public NotificationDTO() {}
 
-    public NotificationDTO(String id, String type, String title, String message,
+    public NotificationDTO(String id, String userId, String type, String title, String message,
                            String referenceId, String referenceType,
                            boolean read, LocalDateTime createdAt) {
         this.id = id;
+        this.userId = userId;
         this.type = type;
         this.title = title;
         this.message = message;
@@ -29,6 +31,8 @@ public class NotificationDTO {
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
     public String getTitle() { return title; }

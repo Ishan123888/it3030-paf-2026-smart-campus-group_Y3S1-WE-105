@@ -24,7 +24,7 @@ export default function NotificationPanel() {
   const loadUnreadCount = async () => {
     try {
       const data = await getUnreadCount();
-      setUnreadCount(data.count);
+      setUnreadCount(data.unreadCount);
     } catch (err) {
       console.error(err);
     }

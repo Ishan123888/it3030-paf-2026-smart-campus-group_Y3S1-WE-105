@@ -12,10 +12,11 @@ export default function OAuthCallback() {
     if (called.current) return;
     called.current = true;
 
-    const token = searchParams.get("token");
-    const error = searchParams.get("error");
+    const token = searchParams.get("token") || new URLSearchParams(window.location.search).get("token");
+    const error = searchParams.get("error") || new URLSearchParams(window.location.search).get("error");
 
     console.log("=== OAuthCallback ===");
+    console.log("rawSearch:", window.location.search);
     console.log("token:", token ? "YES ✅" : "NO ❌");
     console.log("error:", error);
 

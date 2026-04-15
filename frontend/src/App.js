@@ -20,6 +20,7 @@ import Contact from './pages/Contact';
 import StudentBookingsPage from './pages/StudentBookingsPage';
 import StudentBookingFormPage from './pages/StudentBookingFormPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
+import StaffPortal from './pages/StaffPortal';
 
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
@@ -76,6 +77,12 @@ function AppLayout() {
           <Route path="/dashboard/bookings/:bookingId/reschedule" element={
             <ProtectedRoute>
               <StudentBookingFormPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/staff" element={
+            <ProtectedRoute requiredRole="ROLE_STAFF">
+              <StaffPortal />
             </ProtectedRoute>
           } />
 

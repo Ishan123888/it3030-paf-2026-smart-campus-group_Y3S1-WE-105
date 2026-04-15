@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import API from "../../api/api";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { IconUsers, IconUserCheck, IconSearch } from "../../components/common/Icons";
+import { IconUsers, IconUserCheck } from "../../components/common/Icons";
 
 const ROLES = ["ROLE_USER", "ROLE_ADMIN", "ROLE_STAFF", "ROLE_TECHNICIAN"];
 
@@ -18,9 +18,12 @@ export default function UserManagement() {
   const [updating, setUpdating] = useState(null);
   const [message,  setMessage]  = useState("");
 
-  useEffect(() => { loadUsers(); }, []);
+  const showMessage = useCallback((msg) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(""), 3000);
+  }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const res = await API.get("/users");
@@ -31,7 +34,11 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showMessage]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleRoleChange = async (id, newRole) => {
     setUpdating(id);
@@ -45,8 +52,6 @@ export default function UserManagement() {
       setUpdating(null);
     }
   };
-
-  const showMessage = (msg) => { setMessage(msg); setTimeout(() => setMessage(""), 3000); };
 
   return (
     <AdminLayout title="User Management">

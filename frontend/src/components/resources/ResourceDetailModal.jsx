@@ -34,21 +34,21 @@ export default function ResourceDetailModal({ resource, onClose, onBook, canBook
         padding: 20, fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e2e8f0",
-          borderRadius: 20,
-          maxWidth: 540,
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.15)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
+     <div
+  onClick={e => e.stopPropagation()}
+  style={{
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: 20,
+    maxWidth: 540,
+    width: "100%",
+    maxHeight: "90vh",     
+    overflowY: "auto",      
+    boxShadow: "0 24px 60px rgba(0,0,0,0.15)",
+    position: "relative",
+   
+  }}
+>
         {/* Top accent */}
         <div style={{ height: 4, background: `linear-gradient(90deg,${typeColor},${typeColor}66)` }}/>
 
