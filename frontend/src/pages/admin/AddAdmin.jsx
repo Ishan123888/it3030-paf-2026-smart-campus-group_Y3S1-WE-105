@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { createAdminUser } from '../../api/api';
+import { sendOTP, verifyOTP } from '../../api/api';
 import {
   IconUserPlus, IconMail, IconBriefcase, IconShieldUser,
-  IconUsers, IconChevronRight,
+  IconUsers, IconChevronRight, IconPhone,
+  IconMessageCircle, IconCheckCircle, IconSend,
 } from '../../components/common/Icons';
 
 const DEPARTMENTS = [
@@ -23,7 +25,29 @@ export default function AddAdmin() {
   const [toast, setToast]         = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm]   = useState(false);
-  const [created, setCreated]     = useState(null); // last created admin
+  const [created, setCreated]     = useState(null);
+
+  // WhatsApp OTP state
+  const [waPhone,      setWaPhone]      = useState('');
+  const [waVerified,   setWaVerified]   = useState(false);
+  const [waSending,    setWaSending]    = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpInput,     setOtpInput]     = useState('');
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError,     setOtpError]     = useState('');
+
+  const formatPhone = (raw) => {
+    // keep digits only, max 10
+    const digits = raw.replace(/\D/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0,3)} ${digits.slice(3)}`;
+    return `${digits.slice(0,3)} ${digits.slice(3,6)} ${digits.slice(6)}`;
+  };
+
+  const handlePhoneInput = (raw) => {
+    setWaPhone(formatPhone(raw));
+    setWaVerified(false);
+  };
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -31,6 +55,41 @@ export default function AddAdmin() {
   };
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
+
+  const handleSendOTP = async () => {
+    if (!waPhone.trim()) { showToast('Enter a WhatsApp number first.', false); return; }
+    setWaSending(true);
+    try {
+      await sendOTP(waPhone.replace(/\s/g, ''));
+      setShowOtpModal(true);
+      setOtpInput('');
+      setOtpError('');
+    } catch {
+      showToast('Failed to send OTP. Check the number and try again.', false);
+    } finally {
+      setWaSending(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (otpInput.length !== 6) { setOtpError('Enter the 6-digit OTP.'); return; }
+    setOtpVerifying(true);
+    setOtpError('');
+    try {
+      const res = await verifyOTP(waPhone.replace(/\s/g, ''), otpInput);
+      if (res.data.success) {
+        setWaVerified(true);
+        setShowOtpModal(false);
+        showToast('WhatsApp number verified!');
+      } else {
+        setOtpError(res.data.error || 'Invalid OTP. Try again.');
+      }
+    } catch {
+      setOtpError('Verification failed. Try again.');
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
 
   const validate = () => {
     if (!form.name.trim())  return 'Full name is required.';
@@ -119,6 +178,37 @@ export default function AddAdmin() {
                   <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="admin@smartcampus.com" style={{ ...input, paddingLeft:32 }} required/>
                 </div>
               </Field>
+            </div>
+          </FormCard>
+
+          {/* WhatsApp Verification */}
+          <FormCard icon={IconPhone} title="WhatsApp Verification" desc="Send an OTP to verify the admin's WhatsApp number">
+            <div style={{ display:'flex', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
+              <div style={{ flex:1, minWidth:200, position:'relative' }}>
+                <IconPhone size={14} style={iconInInput}/>
+                <input
+                  value={waPhone}
+                  onChange={e => handlePhoneInput(e.target.value)}
+                  placeholder="076 789 3782"
+                  maxLength={12}
+                  style={{ ...input, paddingLeft:32, letterSpacing:'0.05em', borderColor: waVerified ? '#bbf7d0' : '#e2e8f0' }}
+                  disabled={waVerified}
+                />
+              </div>
+              {waVerified ? (
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:9, background:'#f0fdf4', border:'1px solid #bbf7d0', color:'#15803d', fontWeight:700, fontSize:13, whiteSpace:'nowrap' }}>
+                  <IconCheckCircle size={18} style={{ color:'#15803d' }}/> Verified
+                  <button type="button" onClick={() => { setWaVerified(false); setWaPhone(''); }}
+                    style={{ marginLeft:6, background:'none', border:'none', color:'#94a3b8', cursor:'pointer', fontSize:12, fontWeight:600 }}>
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={handleSendOTP} disabled={waSending || !waPhone.trim()}
+                  style={{ padding:'10px 18px', borderRadius:9, border:'none', background:'#25D366', color:'#fff', fontWeight:700, fontSize:13, cursor: waSending||!waPhone.trim() ? 'not-allowed':'pointer', opacity: waSending||!waPhone.trim() ? 0.6:1, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:7, fontFamily:'inherit' }}>
+                  {waSending ? 'Sending…' : <><IconSend size={14}/> Send OTP</>}
+                </button>
+              )}
             </div>
           </FormCard>
 
@@ -225,11 +315,47 @@ export default function AddAdmin() {
           </div>
         </form>
       </div>
+
+      {/* OTP Modal */}
+      {showOtpModal && (
+        <div style={{ position:'fixed', inset:0, zIndex:400, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:'32px 28px', maxWidth:380, width:'100%', boxShadow:'0 24px 60px rgba(0,0,0,0.2)', border:'1px solid #e2e8f0', textAlign:'center' }}>
+            <div style={{ width:64, height:64, borderRadius:'50%', background:'#f0fdf4', border:'1px solid #bbf7d0', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+              <IconMessageCircle size={28} style={{ color:'#15803d' }}/>
+            </div>
+            <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a', margin:'0 0 6px' }}>Enter OTP</h3>
+            <p style={{ fontSize:13, color:'#64748b', margin:'0 0 20px', lineHeight:1.5 }}>
+              A 6-digit code was sent to <strong>{waPhone}</strong> via WhatsApp.
+            </p>
+            <input
+              value={otpInput}
+              onChange={e => { setOtpInput(e.target.value.replace(/\D/g,'').slice(0,6)); setOtpError(''); }}
+              placeholder="000000"
+              maxLength={6}
+              style={{ ...input, textAlign:'center', fontSize:24, fontWeight:800, letterSpacing:'0.3em', marginBottom:8 }}
+              autoFocus
+            />
+            {otpError && <p style={{ fontSize:12, color:'#dc2626', margin:'0 0 12px', fontWeight:600 }}>{otpError}</p>}
+            <div style={{ display:'flex', gap:10, marginTop:16 }}>
+              <button type="button" onClick={() => setShowOtpModal(false)}
+                style={{ flex:1, padding:'11px', borderRadius:9, border:'1px solid #e2e8f0', background:'#f8fafc', color:'#475569', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                Cancel
+              </button>
+              <button type="button" onClick={handleVerifyOTP} disabled={otpVerifying || otpInput.length !== 6}
+                style={{ flex:1, padding:'11px', borderRadius:9, border:'none', background:'linear-gradient(135deg,#4f6fff,#00e5c3)', color:'#fff', fontSize:14, fontWeight:700, cursor: otpVerifying||otpInput.length!==6?'not-allowed':'pointer', opacity: otpVerifying||otpInput.length!==6?0.6:1, fontFamily:'inherit' }}>
+                {otpVerifying ? 'Verifying…' : 'Verify'}
+              </button>
+            </div>
+            <button type="button" onClick={handleSendOTP} disabled={waSending}
+              style={{ marginTop:14, background:'none', border:'none', color:'#4f6fff', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5, margin:'14px auto 0' }}>
+              {waSending ? 'Resending…' : <><IconSend size={12}/> Resend OTP</>}
+            </button>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
-
-// ── Password strength indicator ───────────────────────────────────────────────
 function PasswordStrength({ password }) {
   const checks = [
     { label: 'At least 6 chars', pass: password.length >= 6 },

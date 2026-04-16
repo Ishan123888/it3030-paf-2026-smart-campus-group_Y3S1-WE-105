@@ -154,6 +154,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // ── Public: auth ──────────────────────────────────────────────────
                 .requestMatchers("/api/auth/**").permitAll()
+                // ── Public: OTP (WhatsApp verification) ──────────────────────────
+                .requestMatchers("/api/otp/**").permitAll()
                 // ── Public: OAuth2 ────────────────────────────────────────────────
                 .requestMatchers("/oauth2/**", "/login/**", "/error").permitAll()
                 // ── Public: resource browsing (GET only) ──────────────────────────

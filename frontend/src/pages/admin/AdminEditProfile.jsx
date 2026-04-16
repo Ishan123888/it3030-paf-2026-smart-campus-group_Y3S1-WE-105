@@ -14,12 +14,13 @@ const DEPARTMENTS = [
 ];
 
 export default function AdminEditProfile() {
-  const { user: authUser, loginWithToken } = useAuth();
+  const { user: authUser, loginWithToken, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
+  const [avatarDragging, setAvatarDragging] = useState(false);
 
   // Phone numbers — up to 4
   const [phones, setPhones] = useState(['', '', '', '']);
@@ -57,6 +58,17 @@ export default function AdminEditProfile() {
     setPhones(prev => { const n = [...prev]; n[idx] = value; return n; });
   };
 
+  const handleAvatarFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > 2 * 1024 * 1024) { showToast('Image must be under 2 MB', false); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      handleChange('picture', e.target.result);
+      updateUser({ picture: e.target.result });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -64,6 +76,7 @@ export default function AdminEditProfile() {
       const payload = { ...profile, phoneNumbers };
       const res = await updateMyProfile(payload);
       setProfile(res.data);
+      updateUser({ name: res.data.name, picture: res.data.picture });
       showToast('Profile updated successfully!');
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to save profile', false);
@@ -102,9 +115,23 @@ export default function AdminEditProfile() {
 
           {/* Profile Header Card */}
           <div style={{ background:'linear-gradient(135deg,#4f6fff 0%,#00e5c3 100%)', borderRadius:16, padding:'28px 32px', marginBottom:24, display:'flex', alignItems:'center', gap:24, flexWrap:'wrap' }}>
-            <div style={{ position:'relative' }}>
-              <img src={avatarSrc} alt="avatar" style={{ width:88, height:88, borderRadius:'50%', objectFit:'cover', border:'3px solid rgba(255,255,255,0.4)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)' }}/>
-              <div style={{ position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:'50%', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}>
+            <div style={{ position:'relative', flexShrink:0 }}
+              onDragOver={e => { e.preventDefault(); setAvatarDragging(true); }}
+              onDragLeave={() => setAvatarDragging(false)}
+              onDrop={e => { e.preventDefault(); setAvatarDragging(false); handleAvatarFile(e.dataTransfer.files[0]); }}
+            >
+              <img src={avatarSrc} alt="avatar"
+                style={{ width:88, height:88, borderRadius:'50%', objectFit:'cover', border: avatarDragging?'3px solid #fff':'3px solid rgba(255,255,255,0.4)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)', transition:'border 0.15s' }}/>
+              <label htmlFor="avatar-upload"
+                style={{ position:'absolute', inset:0, borderRadius:'50%', background:'rgba(0,0,0,0.38)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', opacity:0, transition:'opacity 0.18s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity=1}
+                onMouseLeave={e => e.currentTarget.style.opacity=0}>
+                <IconEdit size={18} style={{ color:'#fff' }}/>
+                <span style={{ color:'#fff', fontSize:10, fontWeight:700, marginTop:3 }}>Change</span>
+              </label>
+              <input id="avatar-upload" type="file" accept="image/*" style={{ display:'none' }}
+                onChange={e => handleAvatarFile(e.target.files[0])}/>
+              <div style={{ position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:'50%', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.15)', pointerEvents:'none' }}>
                 <IconEdit size={13} style={{ color:'#4f6fff' }}/>
               </div>
             </div>
@@ -122,7 +149,7 @@ export default function AdminEditProfile() {
             <div style={{ textAlign:'right' }}>
               <div style={{ fontSize:12, color:'rgba(255,255,255,0.7)' }}>Member since</div>
               <div style={{ fontSize:14, fontWeight:700, color:'#fff' }}>
-                {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', { month:'short', year:'numeric' }) : '—'}
+                {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', { month:'short', year:'numeric' }) : new Date().toLocaleDateString('en-US', { month:'short', year:'numeric' })}
               </div>
             </div>
           </div>
@@ -160,9 +187,7 @@ export default function AdminEditProfile() {
                     <input value={profile?.email || ''} disabled style={{ ...input, background:'#f8fafc', color:'#94a3b8', cursor:'not-allowed' }}/>
                     <p style={hint}>Email cannot be changed</p>
                   </Field>
-                  <Field label="Profile Picture URL" span2>
-                    <input value={profile?.picture || ''} onChange={e => handleChange('picture', e.target.value)} placeholder="https://example.com/photo.jpg" style={input}/>
-                  </Field>
+
                   <Field label="Bio" span2>
                     <textarea value={profile?.bio || ''} onChange={e => handleChange('bio', e.target.value)} placeholder="Tell us about yourself..." rows={4} style={{ ...input, resize:'vertical' }}/>
                   </Field>
@@ -271,8 +296,8 @@ export default function AdminEditProfile() {
               {[
                 { label:'Account Type', value: profile?.provider === 'google' ? '🔵 Google OAuth' : '🔑 Local Account' },
                 { label:'Status', value: profile?.active ? '✅ Active' : '❌ Inactive' },
-                { label:'Last Login', value: profile?.lastLogin ? new Date(profile.lastLogin).toLocaleString() : '—' },
-                { label:'Member Since', value: profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—' },
+                { label:'Last Login', value: profile?.lastLogin ? new Date(profile.lastLogin).toLocaleString() : new Date().toLocaleString() },
+                { label:'Member Since', value: profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : new Date().toLocaleDateString() },
               ].map(item => (
                 <div key={item.label} style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8, padding:'10px 14px' }}>
                   <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{item.label}</div>

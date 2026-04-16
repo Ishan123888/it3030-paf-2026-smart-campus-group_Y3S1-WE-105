@@ -488,8 +488,11 @@ export default function AdminResourcesPage() {
                 </select>
               </div>
               <div style={{ gridColumn:"1/-1" }}>
-                <label style={labelStyle}>Availability Windows (comma-separated)</label>
-                <input value={form.availabilityWindows} onChange={e=>setField("availabilityWindows",e.target.value)} placeholder="08:00-12:00, 13:00-17:00" style={inputStyle}/>
+                <label style={labelStyle}>Availability Windows</label>
+                <TimeSlotPicker
+                  value={form.availabilityWindows}
+                  onChange={v => setField("availabilityWindows", v)}
+                />
               </div>
               <div style={{ gridColumn:"1/-1" }}>
                 <label style={labelStyle}>Description</label>
@@ -552,5 +555,106 @@ function PagBtn({ onClick, disabled, active, children, title }) {
     <button onClick={onClick} disabled={disabled} title={title} style={{ minWidth:32, height:32, borderRadius:7, cursor:disabled?"not-allowed":"pointer", background: active?"#4f6fff":"#f8fafc", border:`1px solid ${active?"#4f6fff":"#e2e8f0"}`, color: active?"#fff":"#475569", fontSize:13, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", opacity:disabled?0.4:1, transition:"all 0.15s", padding:"0 6px" }}>
       {children}
     </button>
+  );
+}
+
+function TimeSlotPicker({ value, onChange }) {
+  const [startH, setStartH] = useState("08");
+  const [startM, setStartM] = useState("00");
+  const [endH,   setEndH]   = useState("17");
+  const [endM,   setEndM]   = useState("00");
+  const [open,   setOpen]   = useState(false);
+
+  // Parse existing slots from comma-separated string
+  const slots = value ? value.split(",").map(s => s.trim()).filter(Boolean) : [];
+
+  const addSlot = () => {
+    const slot = `${startH}:${startM}-${endH}:${endM}`;
+    if (slots.includes(slot)) return;
+    const next = [...slots, slot].join(", ");
+    onChange(next);
+    setOpen(false);
+  };
+
+  const removeSlot = (idx) => {
+    const next = slots.filter((_, i) => i !== idx).join(", ");
+    onChange(next);
+  };
+
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const mins  = ["00", "15", "30", "45"];
+
+  return (
+    <div style={{ position: "relative" }}>
+      {/* Slot tags */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: slots.length ? 8 : 0 }}>
+        {slots.map((slot, i) => (
+          <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 20, padding: "4px 10px", fontSize: 12, fontWeight: 700, color: "#2563eb" }}>
+            🕐 {slot}
+            <button type="button" onClick={() => removeSlot(i)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 14, lineHeight: 1, padding: 0, fontWeight: 700 }}>
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+
+      {/* Add slot button */}
+      <button type="button" onClick={() => setOpen(v => !v)}
+        style={{ display: "flex", alignItems: "center", gap: 7, background: "#f8fafc", border: "2px dashed #cbd5e1", borderRadius: 8, padding: "9px 14px", cursor: "pointer", color: "#475569", fontSize: 13, fontWeight: 600, fontFamily: "inherit", width: "100%" }}>
+        <span style={{ fontSize: 16 }}>🕐</span>
+        {open ? "Close picker" : "+ Add time slot"}
+      </button>
+
+      {/* Picker dropdown */}
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 600, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px", boxShadow: "0 8px 32px rgba(0,0,0,0.12)", minWidth: 300 }}
+          onClick={e => e.stopPropagation()}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Select time slot</div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center", marginBottom: 14 }}>
+            {/* Start */}
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>Start</div>
+              <div style={{ display: "flex", gap: 4 }}>
+                <select value={startH} onChange={e => setStartH(e.target.value)} style={{ ...inputStyle, flex: 1, padding: "7px 6px" }}>
+                  {hours.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <span style={{ alignSelf: "center", fontWeight: 800, color: "#475569" }}>:</span>
+                <select value={startM} onChange={e => setStartM(e.target.value)} style={{ ...inputStyle, flex: 1, padding: "7px 6px" }}>
+                  {mins.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ textAlign: "center", fontWeight: 800, color: "#94a3b8", fontSize: 16 }}>→</div>
+
+            {/* End */}
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>End</div>
+              <div style={{ display: "flex", gap: 4 }}>
+                <select value={endH} onChange={e => setEndH(e.target.value)} style={{ ...inputStyle, flex: 1, padding: "7px 6px" }}>
+                  {hours.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <span style={{ alignSelf: "center", fontWeight: 800, color: "#475569" }}>:</span>
+                <select value={endM} onChange={e => setEndM(e.target.value)} style={{ ...inputStyle, flex: 1, padding: "7px 6px" }}>
+                  {mins.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 12, textAlign: "center" }}>
+            {startH}:{startM} → {endH}:{endM}
+          </div>
+
+          <button type="button" onClick={addSlot}
+            style={{ width: "100%", background: "linear-gradient(135deg,#4f6fff,#00e5c3)", border: "none", borderRadius: 8, color: "#fff", padding: "9px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+            Add Slot
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

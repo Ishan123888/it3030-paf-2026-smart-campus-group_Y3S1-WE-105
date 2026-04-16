@@ -12,11 +12,14 @@ const roleColors = {
   ROLE_TECHNICIAN: { bg:"#fffbeb", color:"#d97706", border:"#fde68a" },
 };
 
+const PAGE_SIZE = 10;
+
 export default function UserManagement() {
   const [users,    setUsers]    = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [updating, setUpdating] = useState(null);
   const [message,  setMessage]  = useState("");
+  const [page,     setPage]     = useState(1);
 
   const showMessage = useCallback((msg) => {
     setMessage(msg);
@@ -28,6 +31,7 @@ export default function UserManagement() {
     try {
       const res = await API.get("/users");
       setUsers(res.data);
+      setPage(1);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       showMessage("❌ Failed to load users.");
@@ -39,6 +43,9 @@ export default function UserManagement() {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  const totalPages = Math.ceil(users.length / PAGE_SIZE);
+  const pagedUsers = users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleRoleChange = async (id, newRole) => {
     setUpdating(id);
@@ -107,7 +114,7 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u, idx) => (
+              {pagedUsers.map((u, idx) => (
                 <tr key={u.id} style={{ borderBottom:"1px solid #f1f5f9", background: idx%2===0?"#ffffff":"#fafafa", opacity: updating===u.id?0.6:1, transition:"opacity 0.2s" }}>
                   {/* User */}
                   <td style={{ padding:"14px 16px" }}>
@@ -157,6 +164,39 @@ export default function UserManagement() {
               ))}
             </tbody>
           </table>
+        )}
+        {/* Pagination */}
+        {!loading && users.length > PAGE_SIZE && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderTop:"1px solid #e2e8f0", background:"#f8fafc" }}>
+            <span style={{ fontSize:13, color:"#64748b" }}>
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, users.length)} of {users.length} users
+            </span>
+            <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                style={{ padding:"6px 14px", borderRadius:8, border:"1.5px solid #e2e8f0", background: page===1?"#f1f5f9":"#fff", color: page===1?"#94a3b8":"#0f172a", fontWeight:600, fontSize:13, cursor: page===1?"not-allowed":"pointer" }}
+              >
+                ← Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  style={{ width:34, height:34, borderRadius:8, border:"1.5px solid", borderColor: p===page?"#4f6fff":"#e2e8f0", background: p===page?"#4f6fff":"#fff", color: p===page?"#fff":"#0f172a", fontWeight:700, fontSize:13, cursor:"pointer" }}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={{ padding:"6px 14px", borderRadius:8, border:"1.5px solid #e2e8f0", background: page===totalPages?"#f1f5f9":"#fff", color: page===totalPages?"#94a3b8":"#0f172a", fontWeight:600, fontSize:13, cursor: page===totalPages?"not-allowed":"pointer" }}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </AdminLayout>

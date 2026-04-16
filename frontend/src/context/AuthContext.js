@@ -80,6 +80,7 @@ export const AuthProvider = ({ children }) => {
       isStaff,
       isTechnician,
       isUser,
+      updateUser: (patch) => setUser(prev => ({ ...prev, ...patch })),
     }}>
       {children}
     </AuthContext.Provider>

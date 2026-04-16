@@ -74,4 +74,8 @@ export const createIncident = (payload, files = []) => {
   return api.post('/incidents', formData);
 };
 
+// ─── OTP / WhatsApp ────────────────────────────────
+export const sendOTP   = (phone)       => api.post('/otp/send',   { phone });
+export const verifyOTP = (phone, otp)  => api.post('/otp/verify', { phone, otp });
+
 export default api;
