@@ -4,6 +4,7 @@ import { getResources } from "../api/api";
 import ResourceCard from "../components/resources/ResourceCard";
 import ResourceDetailModal from "../components/resources/ResourceDetailModal";
 import { useAuth } from "../context/AuthContext";
+import { useBrands } from "../hooks/useBrands";
 
 const RESOURCE_TYPES = [
   "LECTURE_HALL", "LAB", "MEETING_ROOM",
@@ -11,11 +12,10 @@ const RESOURCE_TYPES = [
   "WATER_FILTER", "CHAIR", "TABLE", "AC",
 ];
 
-const BRANDS = ["Brand 1", "Brand 2", "Brand 3"];
-
 export default function ResourcesPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { brands } = useBrands();
   const [resources, setResources] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [selected, setSelected]   = useState(null);
@@ -111,7 +111,7 @@ export default function ResourcesPage() {
 
             <select value={filters.brand} onChange={e => setFilter("brand", e.target.value)} style={s.select}>
               <option value="">All Brands</option>
-              {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+              {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
             </select>
 
             <input

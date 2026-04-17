@@ -493,3 +493,41 @@ export function IconSend(props) {
     </Svg>
   );
 }
+
+export function IconTag(props) {
+  return (
+    <Svg {...props}>
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="none"/>
+      <circle cx="7" cy="7" r="1.5" fill="currentColor"/>
+    </Svg>
+  );
+}
+
+export function IconDollarSign(props) {
+  return (
+    <Svg {...props}>
+      <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
+  );
+}
+
+export function IconFileText(props) {
+  return (
+    <Svg {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="none"/>
+      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+      <path d="M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+    </Svg>
+  );
+}
+
+export function IconImage(props) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" fill="none"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+      <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
+  );
+}

@@ -7,6 +7,7 @@ import com.sliit.paf.backend.repository.ResourceRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,6 +46,7 @@ public class ResourceService {
         existing.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "LKR");
         existing.setAvailabilityWindows(dto.getAvailabilityWindows());
         if (dto.getStatus() != null) existing.setStatus(dto.getStatus());
+        existing.setImages(dto.getImages());
         existing.setUpdatedAt(LocalDateTime.now());
 
         return toDTO(resourceRepository.save(existing));
@@ -86,6 +88,7 @@ public class ResourceService {
                 .filter(r -> minCapacity == null || r.getCapacity() >= minCapacity)
                 .filter(r -> status == null || r.getStatus().name().equalsIgnoreCase(status))
                 .filter(r -> search == null || r.getName().toLowerCase().contains(search.toLowerCase()))
+                .sorted(Comparator.comparing(Resource::getCreatedAt, Comparator.nullsFirst(Comparator.reverseOrder())))
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
@@ -111,6 +114,7 @@ public class ResourceService {
         r.setAvailabilityWindows(dto.getAvailabilityWindows());
         r.setPricePerHour(dto.getPricePerHour());
         r.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "LKR");
+        r.setImages(dto.getImages());
         return r;
     }
 
@@ -127,6 +131,7 @@ public class ResourceService {
         dto.setAvailabilityWindows(r.getAvailabilityWindows());
         dto.setPricePerHour(r.getPricePerHour());
         dto.setCurrency(r.getCurrency() != null ? r.getCurrency() : "LKR");
+        dto.setImages(r.getImages());
         dto.setCreatedAt(r.getCreatedAt());
         dto.setUpdatedAt(r.getUpdatedAt());
         return dto;

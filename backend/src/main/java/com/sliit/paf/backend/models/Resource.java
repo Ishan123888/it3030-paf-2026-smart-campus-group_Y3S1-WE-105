@@ -39,6 +39,9 @@ public class Resource {
     // Availability windows e.g. ["08:00-12:00", "13:00-17:00"]
     private List<String> availabilityWindows;
 
+    // Resource images (base64 data URLs or external URLs), up to 5
+    private List<String> images;
+
     private double pricePerHour;
 
     private String currency = "LKR"; // "LKR" or "USD"
@@ -112,6 +115,9 @@ public class Resource {
 
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+
+    public List<String> getImages() { return images; }
+    public void setImages(List<String> images) { this.images = images; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

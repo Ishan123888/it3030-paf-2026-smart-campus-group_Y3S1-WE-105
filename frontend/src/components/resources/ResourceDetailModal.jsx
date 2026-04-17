@@ -1,4 +1,9 @@
 import React from "react";
+import {
+  IconTag, IconMapPin, IconUsers, IconDollarSign,
+  IconFileText, IconClock, IconX, IconResource,
+} from "../common/Icons";
+import { useBrands } from "../../hooks/useBrands";
 
 const TYPE_ICONS = {
   LECTURE_HALL: "🏛️", LAB: "🔬", MEETING_ROOM: "🤝",
@@ -16,11 +21,43 @@ const TYPE_COLORS = {
 
 const CURRENCIES = { LKR: "Rs", USD: "$" };
 
+function ImageGallery({ images }) {
+  const [active, setActive] = React.useState(0);
+  return (
+    <div style={{ marginBottom: 0 }}>
+      {/* Main image */}
+      <div style={{ width:"100%", height:200, overflow:"hidden", borderRadius:"16px 16px 0 0", position:"relative" }}>
+        <img src={images[active]} alt="resource" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+        {images.length > 1 && (
+          <>
+            <button onClick={() => setActive(a => (a - 1 + images.length) % images.length)}
+              style={{ position:"absolute", left:8, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.45)", border:"none", color:"#fff", borderRadius:"50%", width:28, height:28, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+            <button onClick={() => setActive(a => (a + 1) % images.length)}
+              style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.45)", border:"none", color:"#fff", borderRadius:"50%", width:28, height:28, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+          </>
+        )}
+      </div>
+      {/* Thumbnails */}
+      {images.length > 1 && (
+        <div style={{ display:"flex", gap:6, padding:"8px 0 0", justifyContent:"center" }}>
+          {images.map((src, i) => (
+            <div key={i} onClick={() => setActive(i)}
+              style={{ width:44, height:44, borderRadius:6, overflow:"hidden", cursor:"pointer", border:`2px solid ${i===active?"#4f6fff":"#e2e8f0"}`, flexShrink:0, transition:"border-color 0.15s" }}>
+              <img src={src} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ResourceDetailModal({ resource, onClose, onBook, canBook = false }) {
+  const { brands } = useBrands();
   if (!resource) return null;
+  const brandInfo = brands.find(b => b.name === resource.brand);
 
   const isActive  = resource.status === "ACTIVE";
-  const icon      = TYPE_ICONS[resource.type] || "📦";
   const typeColor = TYPE_COLORS[resource.type] || "#4f6fff";
   const symbol    = CURRENCIES[resource.currency] || "Rs";
 
@@ -53,15 +90,20 @@ export default function ResourceDetailModal({ resource, onClose, onBook, canBook
         <div style={{ height: 4, background: `linear-gradient(90deg,${typeColor},${typeColor}66)` }}/>
 
         <div style={{ padding: "24px 28px 28px" }}>
-          {/* Header */}
+          {/* Image gallery */}
+        {resource.images && resource.images.length > 0 && (
+          <ImageGallery images={resource.images} />
+        )}
+
+        {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
             <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
               <div style={{
                 width: 56, height: 56, borderRadius: 14, flexShrink: 0,
                 background: `${typeColor}12`,
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28,
+                display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                {icon}
+                <IconResource size={28} color={typeColor}/>
               </div>
               <div>
                 <h2 style={{ margin: 0, color: "#0f172a", fontSize: 20, fontWeight: 800, letterSpacing: "-0.3px" }}>
@@ -83,7 +125,7 @@ export default function ResourceDetailModal({ resource, onClose, onBook, canBook
               onMouseEnter={e => { e.currentTarget.style.background = "#e2e8f0"; e.currentTarget.style.color = "#0f172a"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#64748b"; }}
             >
-              ✕
+              <IconX size={16}/>
             </button>
           </div>
 
@@ -104,25 +146,40 @@ export default function ResourceDetailModal({ resource, onClose, onBook, canBook
           {/* Details Grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
             {[
-              { label: "Brand",     value: resource.brand,    icon: "🏷️" },
-              { label: "Location",  value: resource.location, icon: "📍" },
-              { label: "Capacity",  value: resource.capacity ? `${resource.capacity} people` : "N/A", icon: "👥" },
-              { label: "Price/Hour",value: resource.pricePerHour > 0 ? `${symbol} ${Number(resource.pricePerHour).toLocaleString()}` : "Free", icon: "💰" },
-            ].map(({ label, value, icon: ic }) => (
+              { label: "Brand",     value: resource.brand,    Icon: IconTag },
+              { label: "Location",  value: resource.location, Icon: IconMapPin },
+              { label: "Capacity",  value: resource.capacity ? `${resource.capacity} people` : "N/A", Icon: IconUsers },
+              { label: "Price/Hour",value: resource.pricePerHour > 0 ? `${symbol} ${Number(resource.pricePerHour).toLocaleString()}` : "Free", Icon: IconDollarSign },
+            ].map(({ label, value, Icon }) => (
               <div key={label} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 5 }}>
-                  {ic} {label}
+                <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 5, display:"flex", alignItems:"center", gap:5 }}>
+                  <Icon size={12} style={{ color:"#94a3b8", flexShrink:0 }}/> {label}
                 </div>
                 <div style={{ color: "#0f172a", fontSize: 14, fontWeight: 700 }}>{value}</div>
               </div>
             ))}
           </div>
 
+          {/* Brand details */}
+          {brandInfo && (
+            <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:10, padding:"12px 14px", marginBottom:12 }}>
+              <div style={{ fontSize:11, color:"#94a3b8", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:8, display:"flex", alignItems:"center", gap:5 }}>
+                <IconTag size={12} style={{ color:"#94a3b8" }}/> Brand Info
+              </div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#0f172a", marginBottom: brandInfo.description||brandInfo.contact ? 4 : 0 }}>{brandInfo.name}</div>
+              {brandInfo.description && <div style={{ fontSize:12, color:"#475569", marginBottom: brandInfo.contact ? 4 : 0 }}>{brandInfo.description}</div>}
+              {brandInfo.contact && <div style={{ fontSize:12, color:"#4f6fff", fontWeight:600 }}>{brandInfo.contact}</div>}
+              {!brandInfo.description && !brandInfo.contact && (
+                <div style={{ fontSize:12, color:"#94a3b8" }}>No additional details available</div>
+              )}
+            </div>
+          )}
+
           {/* Description */}
           {resource.description && (
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px", marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
-                📝 Description
+              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8, display:"flex", alignItems:"center", gap:5 }}>
+                <IconFileText size={12} style={{ color:"#94a3b8" }}/> Description
               </div>
               <p style={{ color: "#475569", fontSize: 13, lineHeight: 1.7, margin: 0 }}>{resource.description}</p>
             </div>
@@ -131,8 +188,8 @@ export default function ResourceDetailModal({ resource, onClose, onBook, canBook
           {/* Availability Windows */}
           {resource.availabilityWindows?.length > 0 && (
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 10 }}>
-                🕐 Availability Windows
+              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 10, display:"flex", alignItems:"center", gap:5 }}>
+                <IconClock size={12} style={{ color:"#94a3b8" }}/> Availability Windows
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {resource.availabilityWindows.map((w, i) => (

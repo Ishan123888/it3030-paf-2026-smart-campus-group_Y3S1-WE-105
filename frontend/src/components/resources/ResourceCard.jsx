@@ -1,4 +1,5 @@
 import React from "react";
+import { useBrands } from "../../hooks/useBrands";
 
 const TYPE_ICONS = {
   LECTURE_HALL: "🏛️", LAB: "🔬", MEETING_ROOM: "🤝",
@@ -17,6 +18,8 @@ const TYPE_COLORS = {
 const CURRENCIES = { LKR: "Rs", USD: "$" };
 
 export default function ResourceCard({ resource, onClick }) {
+  const { brands } = useBrands();
+  const brandInfo = brands.find(b => b.name === resource.brand);
   const isActive   = resource.status === "ACTIVE";
   const icon       = TYPE_ICONS[resource.type] || "📦";
   const typeColor  = TYPE_COLORS[resource.type] || "#4f6fff";
@@ -64,15 +67,21 @@ export default function ResourceCard({ resource, onClick }) {
         {isActive ? "Active" : "Out of Service"}
       </span>
 
-      {/* Icon */}
-      <div style={{
-        width: 48, height: 48, borderRadius: 12, marginBottom: 14, marginTop: 6,
-        background: `${typeColor}12`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 24,
-      }}>
-        {icon}
-      </div>
+      {/* Image or Icon */}
+      {resource.images && resource.images.length > 0 ? (
+        <div style={{ width:"100%", height:120, borderRadius:10, overflow:"hidden", marginBottom:14, marginTop:6, flexShrink:0 }}>
+          <img src={resource.images[0]} alt={resource.name} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+        </div>
+      ) : (
+        <div style={{
+          width: 48, height: 48, borderRadius: 12, marginBottom: 14, marginTop: 6,
+          background: `${typeColor}12`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 24,
+        }}>
+          {icon}
+        </div>
+      )}
 
       {/* Name + Type */}
       <h3 style={{ margin: "0 0 4px", color: "#0f172a", fontSize: 15, fontWeight: 700, paddingRight: 80, lineHeight: 1.3 }}>
@@ -87,7 +96,12 @@ export default function ResourceCard({ resource, onClick }) {
 
       {/* Meta */}
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <MetaRow label="Brand"    value={resource.brand}    color={typeColor} />
+        <MetaRow label="Brand" value={resource.brand} color={typeColor} />
+        {brandInfo && (brandInfo.description || brandInfo.contact) && (
+          <div style={{ fontSize:11, color:"#94a3b8", marginTop:-4, paddingLeft:2 }}>
+            {[brandInfo.description, brandInfo.contact].filter(Boolean).join(" · ")}
+          </div>
+        )}
         <MetaRow label="Location" value={resource.location} />
         {resource.capacity > 0 && (
           <MetaRow label="Capacity" value={`${resource.capacity} people`} />

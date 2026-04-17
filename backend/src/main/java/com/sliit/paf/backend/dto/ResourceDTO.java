@@ -33,6 +33,8 @@ public class ResourceDTO {
 
     private List<String> availabilityWindows;
 
+    private List<String> images;
+
     private double pricePerHour;
 
     private String currency = "LKR";
@@ -76,6 +78,9 @@ public class ResourceDTO {
 
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+
+    public List<String> getImages() { return images; }
+    public void setImages(List<String> images) { this.images = images; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

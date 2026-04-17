@@ -7,12 +7,12 @@ import { getResources, createResource, updateResource, toggleResourceStatus, del
 import AdminLayout from "../components/admin/AdminLayout";
 import {
   IconPlus, IconSearch, IconFilter, IconEdit, IconTrash,
-  IconToggleLeft, IconToggleRight, IconChevronLeft, IconChevronRight,
+  IconToggleLeft, IconToggleRight, IconChevronLeft, IconChevronRight, IconImage,
 } from "../components/common/Icons";
+import { useBrands } from "../hooks/useBrands";
 
 const RESOURCE_TYPES = ["LECTURE_HALL","LAB","MEETING_ROOM","PROJECTOR","CAMERA","LAPTOP","MICROPHONE","SMART_BOARD","WATER_FILTER","CHAIR","TABLE","AC"];
-const BRANDS = ["Brand 1","Brand 2","Brand 3"];
-const EMPTY_FORM = { name:"", type:"LECTURE_HALL", brand:"Brand 1", location:"", capacity:1, description:"", pricePerHour:0, currency:"LKR", availabilityWindows:"", status:"ACTIVE" };
+const EMPTY_FORM = { name:"", type:"LECTURE_HALL", brand:"", location:"", capacity:1, description:"", pricePerHour:0, currency:"LKR", availabilityWindows:"", status:"ACTIVE", images:[] };
 
 const CURRENCIES = [
   { code: "LKR", symbol: "Rs", label: "LKR" },
@@ -39,6 +39,7 @@ const useIsMobile = () => {
 
 export default function AdminResourcesPage() {
   const isMobile = useIsMobile();
+  const { brands, updateBrands } = useBrands();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -47,6 +48,7 @@ export default function AdminResourcesPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showBrandManager, setShowBrandManager] = useState(false);
 
   // Table filters
   const [globalFilter, setGlobalFilter] = useState("");
@@ -179,14 +181,14 @@ export default function AdminResourcesPage() {
   const openCreate = () => { setEditTarget(null); setForm(EMPTY_FORM); setShowForm(true); };
   const openEdit = (r) => {
     setEditTarget(r);
-    setForm({ name:r.name, type:r.type, brand:r.brand, location:r.location, capacity:r.capacity, description:r.description||"", pricePerHour:r.pricePerHour||0, currency:r.currency||"LKR", availabilityWindows:(r.availabilityWindows||[]).join(", "), status:r.status });
+    setForm({ name:r.name, type:r.type, brand:r.brand, location:r.location, capacity:r.capacity, description:r.description||"", pricePerHour:r.pricePerHour||0, currency:r.currency||"LKR", availabilityWindows:(r.availabilityWindows||[]).join(", "), status:r.status, images:r.images||[] });
     setShowForm(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true);
     try {
-      const payload = { ...form, capacity:Number(form.capacity), pricePerHour:Number(form.pricePerHour), availabilityWindows: form.availabilityWindows ? form.availabilityWindows.split(",").map(s=>s.trim()).filter(Boolean) : [] };
+      const payload = { ...form, capacity:Number(form.capacity), pricePerHour:Number(form.pricePerHour), availabilityWindows: form.availabilityWindows ? form.availabilityWindows.split(",").map(s=>s.trim()).filter(Boolean) : [], images: form.images||[] };
       if (editTarget) { await updateResource(editTarget.id, payload); showToast("Resource updated"); }
       else { await createResource(payload); showToast("Resource created"); }
       setShowForm(false); load();
@@ -217,13 +219,16 @@ export default function AdminResourcesPage() {
       )}
 
       {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:10 }}>
         <div>
           <h2 style={{ margin:"0 0 4px", color:"#0f172a", fontSize:20, fontWeight:800 }}>Campus Resources</h2>
           <p style={{ color:"#64748b", margin:0, fontSize:14 }}>Manage all campus facilities and equipment</p>
         </div>
         <button onClick={openCreate} style={{ background:"linear-gradient(135deg,#4f6fff,#00e5c3)", border:"none", borderRadius:10, color:"#fff", padding:"10px 18px", cursor:"pointer", fontSize:14, fontWeight:700, fontFamily:"inherit", boxShadow:"0 4px 12px rgba(79,111,255,0.25)", display:"flex", alignItems:"center", gap:8 }}>
           <IconPlus size={16}/> Add Resource
+        </button>
+        <button onClick={() => setShowBrandManager(true)} style={{ background:"#fff", border:"2px solid #e2e8f0", borderRadius:10, color:"#475569", padding:"10px 18px", cursor:"pointer", fontSize:14, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
+          <IconEdit size={15}/> Edit Brands
         </button>
       </div>
 
@@ -436,7 +441,8 @@ export default function AdminResourcesPage() {
               </div>
               <div><label style={labelStyle}>Brand *</label>
                 <select required value={form.brand} onChange={e=>setField("brand",e.target.value)} style={inputStyle}>
-                  {BRANDS.map(b=><option key={b} value={b}>{b}</option>)}
+                  <option value="">Select brand...</option>
+                  {brands.map(b=><option key={b.id} value={b.name}>{b.name}{b.description ? ` — ${b.description}` : ""}</option>)}
                 </select>
               </div>
               <div><label style={labelStyle}>Location *</label>
@@ -495,6 +501,10 @@ export default function AdminResourcesPage() {
                 />
               </div>
               <div style={{ gridColumn:"1/-1" }}>
+                <label style={labelStyle}>Resource Images (up to 5)</label>
+                <ImageUploader images={form.images||[]} onChange={imgs=>setField("images",imgs)}/>
+              </div>
+              <div style={{ gridColumn:"1/-1" }}>
                 <label style={labelStyle}>Description</label>
                 <textarea value={form.description} onChange={e=>setField("description",e.target.value)} placeholder="Optional description..." rows={3} style={{ ...inputStyle, resize:"vertical" }}/>
               </div>
@@ -507,6 +517,11 @@ export default function AdminResourcesPage() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {/* Brand Manager */}
+      {showBrandManager && (
+        <BrandManager brands={brands} onUpdate={updateBrands} onClose={() => setShowBrandManager(false)}/>
       )}
 
       {/* Delete Confirm */}
@@ -656,5 +671,133 @@ function TimeSlotPicker({ value, onChange }) {
         </div>
       )}
     </div>
+  );
+}
+
+function ImageUploader({ images, onChange }) {
+  const MAX = 5;
+
+  const handleFiles = (files) => {
+    const remaining = MAX - images.length;
+    if (remaining <= 0) return;
+    const toRead = Array.from(files).slice(0, remaining);
+    toRead.forEach(file => {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 3 * 1024 * 1024) return; // 3MB limit per image
+      const reader = new FileReader();
+      reader.onload = e => onChange([...images, e.target.result]);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const remove = (idx) => onChange(images.filter((_, i) => i !== idx));
+
+  return (
+    <div>
+      {/* Thumbnails */}
+      {images.length > 0 && (
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
+          {images.map((src, i) => (
+            <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:8, overflow:"hidden", border:"2px solid #e2e8f0", flexShrink:0 }}>
+              <img src={src} alt={`img-${i}`} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              <button type="button" onClick={() => remove(i)}
+                style={{ position:"absolute", top:2, right:2, width:18, height:18, borderRadius:"50%", background:"rgba(15,23,42,0.7)", border:"none", color:"#fff", fontSize:11, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Drop zone */}
+      {images.length < MAX && (
+        <label
+          style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, padding:"18px 12px", border:"2px dashed #cbd5e1", borderRadius:8, cursor:"pointer", background:"#f8fafc" }}
+          onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor="#4f6fff"; }}
+          onDragLeave={e => { e.currentTarget.style.borderColor="#cbd5e1"; }}
+          onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor="#cbd5e1"; handleFiles(e.dataTransfer.files); }}
+        >
+          <IconImage size={28} style={{ color:"#94a3b8" }}/>
+          <span style={{ fontSize:13, fontWeight:600, color:"#475569" }}>Click or drag to upload</span>
+          <span style={{ fontSize:11, color:"#94a3b8" }}>PNG, JPG — max 3 MB each · {images.length}/{MAX} added</span>
+          <input type="file" accept="image/*" multiple style={{ display:"none" }} onChange={e => handleFiles(e.target.files)}/>
+        </label>
+      )}
+    </div>
+  );
+}
+
+function BrandManager({ brands, onUpdate, onClose }) {
+  const [list, setList] = useState(brands.map(b => ({ ...b })));
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newContact, setNewContact] = useState("");
+
+  const addBrand = () => {
+    if (!newName.trim()) return;
+    const next = [...list, { id: Date.now().toString(), name: newName.trim(), description: newDesc.trim(), contact: newContact.trim() }];
+    setList(next);
+    setNewName(""); setNewDesc(""); setNewContact("");
+  };
+
+  const removeBrand = (id) => setList(l => l.filter(b => b.id !== id));
+
+  const updateField = (id, field, val) =>
+    setList(l => l.map(b => b.id === id ? { ...b, [field]: val } : b));
+
+  const save = () => { onUpdate(list); onClose(); };
+
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+        <div>
+          <div style={{ fontSize:15, fontWeight:800, color:"#0f172a" }}>Edit Brands</div>
+          <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>Add, edit or remove resource brands</div>
+        </div>
+        <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#64748b", fontSize:16 }}>✕</button>
+      </div>
+
+      {/* Existing brands */}
+      <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:18 }}>
+        {list.map(b => (
+          <div key={b.id} style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:10, padding:"12px 14px" }}>
+            <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
+              <input value={b.name} onChange={e => updateField(b.id, "name", e.target.value)}
+                placeholder="Brand name *" style={{ ...inputStyle, flex:1, fontWeight:700 }}/>
+              <button onClick={() => removeBrand(b.id)}
+                style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:7, color:"#dc2626", width:32, height:36, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:14 }}>✕</button>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <input value={b.description} onChange={e => updateField(b.id, "description", e.target.value)}
+                placeholder="Description (optional)" style={inputStyle}/>
+              <input value={b.contact} onChange={e => updateField(b.id, "contact", e.target.value)}
+                placeholder="Contact / website (optional)" style={inputStyle}/>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add new brand */}
+      <div style={{ background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:10, padding:"14px", marginBottom:18 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:"#2563eb", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:10 }}>Add New Brand</div>
+        <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Brand name *"
+            style={{ ...inputStyle, flex:1 }} onKeyDown={e => e.key === "Enter" && addBrand()}/>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+          <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Description" style={inputStyle}/>
+          <input value={newContact} onChange={e => setNewContact(e.target.value)} placeholder="Contact / website" style={inputStyle}/>
+        </div>
+        <button onClick={addBrand} disabled={!newName.trim()}
+          style={{ background:"#2563eb", border:"none", borderRadius:8, color:"#fff", padding:"8px 18px", cursor: newName.trim()?"pointer":"not-allowed", fontWeight:700, fontSize:13, fontFamily:"inherit", opacity: newName.trim()?1:0.5 }}>
+          + Add Brand
+        </button>
+      </div>
+
+      <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+        <button onClick={onClose} style={{ background:"#f1f5f9", border:"1px solid #e2e8f0", borderRadius:8, color:"#475569", padding:"10px 20px", cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>Cancel</button>
+        <button onClick={save} style={{ background:"linear-gradient(135deg,#4f6fff,#00e5c3)", border:"none", borderRadius:8, color:"#fff", padding:"10px 24px", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Save Brands</button>
+      </div>
+    </Modal>
   );
 }
