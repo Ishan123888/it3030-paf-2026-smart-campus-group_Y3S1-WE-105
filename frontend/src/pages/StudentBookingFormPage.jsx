@@ -4,6 +4,52 @@ import { createBooking, getMyBookings, getResourceById, rescheduleBooking } from
 import BackgroundSlideshow, { toImgurDirect } from '../components/common/BackgroundSlideshow';
 
 const DASH_BG = [toImgurDirect('https://imgur.com/t4yWwhI')];
+const DEFAULT_WINDOWS = ['08:00-18:00'];
+const SLOT_LENGTH_HOURS = 2;
+
+function timeToMinutes(value) {
+  const [hours, minutes] = value.split(':').map(Number);
+  return (hours * 60) + minutes;
+}
+
+function minutesToTime(value) {
+  const hours = String(Math.floor(value / 60)).padStart(2, '0');
+  const minutes = String(value % 60).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+function formatTimeLabel(value) {
+  const totalMinutes = timeToMinutes(value);
+  const hours24 = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 || 12;
+  return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+}
+
+function buildTwoHourSlots(windows) {
+  return (windows?.length ? windows : DEFAULT_WINDOWS).flatMap((windowRange) => {
+    const [start, end] = windowRange.split('-').map((part) => part.trim());
+    if (!start || !end) return [];
+
+    const startMinutes = timeToMinutes(start);
+    const endMinutes = timeToMinutes(end);
+    const slotSize = SLOT_LENGTH_HOURS * 60;
+    const slots = [];
+
+    for (let slotStart = startMinutes; slotStart + slotSize <= endMinutes; slotStart += slotSize) {
+      const slotEnd = slotStart + slotSize;
+      slots.push({
+        key: `${minutesToTime(slotStart)}-${minutesToTime(slotEnd)}`,
+        startTime: minutesToTime(slotStart),
+        endTime: minutesToTime(slotEnd),
+        label: `${formatTimeLabel(minutesToTime(slotStart))} - ${formatTimeLabel(minutesToTime(slotEnd))}`,
+      });
+    }
+
+    return slots;
+  });
+}
 
 export default function StudentBookingFormPage() {
   const navigate = useNavigate();
@@ -60,12 +106,41 @@ export default function StudentBookingFormPage() {
     return resource.availabilityWindows.join(', ');
   }, [resource]);
 
+  const timeSlots = useMemo(() => {
+    const generatedSlots = buildTwoHourSlots(resource?.availabilityWindows);
+    const currentSlotKey = form.startTime && form.endTime ? `${form.startTime}-${form.endTime}` : '';
+
+    if (currentSlotKey && !generatedSlots.some((slot) => slot.key === currentSlotKey)) {
+      return [
+        ...generatedSlots,
+        {
+          key: currentSlotKey,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          label: `${formatTimeLabel(form.startTime)} - ${formatTimeLabel(form.endTime)}`,
+        },
+      ].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    }
+
+    return generatedSlots;
+  }, [form.endTime, form.startTime, resource?.availabilityWindows]);
+
   const setField = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+  const selectedSlotKey = form.startTime && form.endTime ? `${form.startTime}-${form.endTime}` : '';
+
+  const selectSlot = (slot) => {
+    setForm((prev) => ({
+      ...prev,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+    }));
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.bookingDate || !form.startTime || !form.endTime) {
-      setError('Please fill in booking date, start time, and end time.');
+      setError('Please choose a booking date and one 2-hour slot.');
       return;
     }
 
@@ -111,14 +186,28 @@ export default function StudentBookingFormPage() {
                   <Label text="Booking Date" />
                   <input type="date" value={form.bookingDate} onChange={e => setField('bookingDate', e.target.value)} style={s.input} required />
 
-                  <div style={s.twoCol}>
-                    <div>
-                      <Label text="Start Time" />
-                      <input type="time" value={form.startTime} onChange={e => setField('startTime', e.target.value)} style={s.input} required />
+                  <div>
+                    <Label text="Available 2-Hour Slots" />
+                    <div style={s.slotGrid}>
+                      {timeSlots.map((slot) => {
+                        const isSelected = selectedSlotKey === slot.key;
+                        return (
+                          <button
+                            key={slot.key}
+                            type="button"
+                            onClick={() => selectSlot(slot)}
+                            style={{
+                              ...s.slotTab,
+                              ...(isSelected ? s.slotTabActive : {}),
+                            }}
+                          >
+                            {slot.label}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div>
-                      <Label text="End Time" />
-                      <input type="time" value={form.endTime} onChange={e => setField('endTime', e.target.value)} style={s.input} required />
+                    <div style={s.slotHint}>
+                      Each booking slot is limited to {SLOT_LENGTH_HOURS} hours.
                     </div>
                   </div>
 
@@ -185,6 +274,10 @@ const s = {
   input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: '#fff', boxSizing: 'border-box' },
   textarea: { minHeight: 110, resize: 'vertical', width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: '#fff', boxSizing: 'border-box' },
   twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
+  slotGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 },
+  slotTab: { width: '100%', padding: '11px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', color: '#dbe4ff', cursor: 'pointer', fontWeight: 700, textAlign: 'center' },
+  slotTabActive: { background: 'linear-gradient(135deg,#4f6fff,#00e5c3)', color: '#fff', border: '1px solid transparent', boxShadow: '0 10px 24px rgba(79,111,255,0.24)' },
+  slotHint: { marginTop: 8, color: 'rgba(219,228,255,0.72)', fontSize: 12 },
   submitBtn: { marginTop: 8, background: 'linear-gradient(135deg,#4f6fff,#00e5c3)', border: 'none', color: '#fff', padding: '13px 16px', borderRadius: 12, cursor: 'pointer', fontWeight: 800 },
   infoCard: { background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18, padding: 24, height: 'fit-content', backdropFilter: 'blur(12px)' },
   infoTitle: { color: '#fff', marginTop: 0, marginBottom: 16 },

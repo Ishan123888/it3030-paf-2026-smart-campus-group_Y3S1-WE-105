@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { approveBooking, getAllBookings, rejectBooking } from '../../api/api';
+import { approveBooking, cancelBooking, getAllBookings, rejectBooking } from '../../api/api';
 
 const FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
 
@@ -49,6 +49,18 @@ export default function AdminBookingsPage() {
       loadBookings();
     } catch (err) {
       setMessage(err.response?.data?.message || 'Unable to reject booking.');
+    }
+  };
+
+  const handleCancel = async (bookingId) => {
+    const confirmed = window.confirm('Cancel this booking?');
+    if (!confirmed) return;
+    try {
+      await cancelBooking(bookingId);
+      setMessage('Booking cancelled successfully.');
+      loadBookings();
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Unable to cancel booking.');
     }
   };
 
@@ -123,9 +135,14 @@ export default function AdminBookingsPage() {
                         <>
                           <button onClick={() => handleApprove(booking.id)} style={s.approveBtn}>Approve</button>
                           <button onClick={() => handleReject(booking.id)} style={s.rejectBtn}>Reject</button>
+                          <button onClick={() => handleCancel(booking.id)} style={s.cancelBtn}>Cancel</button>
                         </>
                       )}
-                      {booking.status !== 'PENDING' && <span style={s.secondaryText}>Reviewed</span>}
+                      {booking.status === 'APPROVED' && (
+                        <button onClick={() => handleCancel(booking.id)} style={s.cancelBtn}>Cancel</button>
+                      )}
+                      {booking.status === 'REJECTED' && <span style={s.secondaryText}>Rejected</span>}
+                      {booking.status === 'CANCELLED' && <span style={s.secondaryText}>Cancelled</span>}
                     </div>
                   </td>
                 </tr>
@@ -172,5 +189,6 @@ const s = {
   actions: { display: 'flex', gap: 8, flexWrap: 'wrap' },
   approveBtn: { background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer', fontWeight: 700 },
   rejectBtn: { background: '#dc2626', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer', fontWeight: 700 },
+  cancelBtn: { background: '#475569', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer', fontWeight: 700 },
   badge: { display: 'inline-block', padding: '6px 10px', borderRadius: 999, fontSize: 11, fontWeight: 800 },
 };

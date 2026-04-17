@@ -38,7 +38,7 @@ public class BookingService {
     public BookingDTO createBooking(String userEmail, BookingDTO dto) {
         User user = getUser(userEmail);
         Resource resource = getResource(dto.getResourceId());
-        validateBookingWindow(dto, resource, null, false);
+        validateBookingWindow(dto, resource, userEmail, null, false);
 
         Booking booking = new Booking();
         booking.setResourceId(resource.getId());
@@ -83,7 +83,11 @@ public class BookingService {
 
     public BookingDTO cancelBooking(String bookingId, String userEmail) {
         Booking booking = getBooking(bookingId);
-        ensureOwner(booking, userEmail);
+        User actor = getUser(userEmail);
+        boolean isAdmin = hasRole(actor, "ROLE_ADMIN");
+        if (!isAdmin) {
+            ensureOwner(booking, userEmail);
+        }
         if (booking.getStatus() == Booking.BookingStatus.CANCELLED) {
             throw new RuntimeException("Booking is already cancelled.");
         }
@@ -92,7 +96,9 @@ public class BookingService {
         }
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setUpdatedAt(LocalDateTime.now());
-        booking.setAdminReason("Cancelled by student");
+        booking.setReviewedBy(userEmail);
+        booking.setReviewedAt(LocalDateTime.now());
+        booking.setAdminReason(isAdmin ? "Cancelled by admin" : "Cancelled by student");
         return toDTO(bookingRepository.save(booking));
     }
 
@@ -105,7 +111,7 @@ public class BookingService {
             throw new RuntimeException("Cancelled bookings cannot be rescheduled.");
         }
 
-        validateBookingWindow(dto, resource, booking.getId(), booking.getStatus() == Booking.BookingStatus.APPROVED);
+        validateBookingWindow(dto, resource, userEmail, booking.getId(), booking.getStatus() == Booking.BookingStatus.APPROVED);
 
         booking.setBookingDate(dto.getBookingDate());
         booking.setStartTime(dto.getStartTime());
@@ -123,6 +129,9 @@ public class BookingService {
 
     public BookingDTO approveBooking(String bookingId, String adminEmail) {
         Booking booking = getBooking(bookingId);
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new RuntimeException("Only pending bookings can be approved.");
+        }
         validateExistingBookingConflict(booking, booking.getId());
         booking.setStatus(Booking.BookingStatus.APPROVED);
         booking.setAdminReason(null);
@@ -139,6 +148,9 @@ public class BookingService {
             throw new RuntimeException("Rejection reason is required.");
         }
         Booking booking = getBooking(bookingId);
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new RuntimeException("Only pending bookings can be rejected.");
+        }
         booking.setStatus(Booking.BookingStatus.REJECTED);
         booking.setAdminReason(reason.trim());
         booking.setReviewedBy(adminEmail);
@@ -159,7 +171,7 @@ public class BookingService {
         return matchesStatus && matchesResource && matchesDate;
     }
 
-    private void validateBookingWindow(BookingDTO dto, Resource resource, String currentBookingId, boolean requireConflictCheck) {
+    private void validateBookingWindow(BookingDTO dto, Resource resource, String userEmail, String currentBookingId, boolean requireConflictCheck) {
         if (resource.getStatus() != Resource.ResourceStatus.ACTIVE) {
             throw new RuntimeException("Selected resource is currently unavailable.");
         }
@@ -173,28 +185,73 @@ public class BookingService {
         if (dto.getBookingDate() == null || dto.getBookingDate().isBefore(java.time.LocalDate.now())) {
             throw new RuntimeException("Booking date cannot be in the past.");
         }
+        validateDuplicateUserBooking(userEmail, resource.getId(), dto.getBookingDate(), dto.getStartTime(), dto.getEndTime(), currentBookingId);
         if (requireConflictCheck || currentBookingId == null) {
-            validateConflict(resource.getId(), dto.getBookingDate(), dto.getStartTime(), dto.getEndTime(), currentBookingId);
+            validateConflict(resource, dto.getBookingDate(), dto.getStartTime(), dto.getEndTime(),
+                    dto.getExpectedAttendees(), currentBookingId);
         }
     }
 
     private void validateExistingBookingConflict(Booking booking, String currentBookingId) {
-        validateConflict(booking.getResourceId(), booking.getBookingDate(), booking.getStartTime(), booking.getEndTime(), currentBookingId);
+        Resource resource = getResource(booking.getResourceId());
+        validateConflict(resource, booking.getBookingDate(), booking.getStartTime(), booking.getEndTime(),
+                booking.getExpectedAttendees(), currentBookingId);
     }
 
-    private void validateConflict(String resourceId,
+    private void validateConflict(Resource resource,
                                   java.time.LocalDate bookingDate,
                                   java.time.LocalTime startTime,
                                   java.time.LocalTime endTime,
+                                  Integer expectedAttendees,
                                   String currentBookingId) {
-        boolean conflict = bookingRepository.findByResourceIdAndBookingDate(resourceId, bookingDate).stream()
+        List<Booking> overlappingBookings = bookingRepository.findByResourceIdAndBookingDate(resource.getId(), bookingDate).stream()
                 .filter(existing -> existing.getStatus() == Booking.BookingStatus.APPROVED
                         || existing.getStatus() == Booking.BookingStatus.PENDING)
                 .filter(existing -> currentBookingId == null || !existing.getId().equals(currentBookingId))
+                .filter(existing -> startTime.isBefore(existing.getEndTime()) && endTime.isAfter(existing.getStartTime()))
+                .collect(Collectors.toList());
+
+        int requestedAttendees = expectedAttendees == null ? 1 : expectedAttendees;
+
+        if (resource.getCapacity() <= 0) {
+            if (!overlappingBookings.isEmpty()) {
+                throw new RuntimeException("This resource already has a booking for the selected time range.");
+            }
+            return;
+        }
+
+        int occupiedCapacity = overlappingBookings.stream()
+                .map(Booking::getExpectedAttendees)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        if (occupiedCapacity + requestedAttendees > resource.getCapacity()) {
+            int remainingCapacity = Math.max(resource.getCapacity() - occupiedCapacity, 0);
+            throw new RuntimeException("This time slot is full. Remaining capacity: " + remainingCapacity + ".");
+        }
+    }
+
+    private boolean hasRole(User user, String role) {
+        return user.getRoles() != null && user.getRoles().contains(role);
+    }
+
+    private void validateDuplicateUserBooking(String userEmail,
+                                              String resourceId,
+                                              java.time.LocalDate bookingDate,
+                                              java.time.LocalTime startTime,
+                                              java.time.LocalTime endTime,
+                                              String currentBookingId) {
+        boolean hasDuplicate = bookingRepository.findByUserEmailOrderByCreatedAtDesc(userEmail).stream()
+                .filter(existing -> existing.getStatus() == Booking.BookingStatus.PENDING
+                        || existing.getStatus() == Booking.BookingStatus.APPROVED)
+                .filter(existing -> currentBookingId == null || !existing.getId().equals(currentBookingId))
+                .filter(existing -> Objects.equals(existing.getResourceId(), resourceId))
+                .filter(existing -> Objects.equals(existing.getBookingDate(), bookingDate))
                 .anyMatch(existing -> startTime.isBefore(existing.getEndTime()) && endTime.isAfter(existing.getStartTime()));
 
-        if (conflict) {
-            throw new RuntimeException("This resource already has a booking for the selected time range.");
+        if (hasDuplicate) {
+            throw new RuntimeException("You already have an active booking request for this resource and time slot.");
         }
     }
 
