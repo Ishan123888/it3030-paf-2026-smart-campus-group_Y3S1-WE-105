@@ -52,6 +52,7 @@ export const cancelBooking       = (id)                  => api.patch(`/bookings
 export const rescheduleBooking   = (id, data)            => api.put(`/bookings/${id}/reschedule`, data);
 export const approveBooking      = (id)                  => api.patch(`/bookings/${id}/approve`);
 export const rejectBooking       = (id, reason)          => api.patch(`/bookings/${id}/reject`, { reason });
+export const getBookingAvailability = (params)           => api.get('/bookings/availability', { params });
 
 // ─── Incidents ─────────────────────────────────────
 export const getIncidents            = () => api.get('/incidents');

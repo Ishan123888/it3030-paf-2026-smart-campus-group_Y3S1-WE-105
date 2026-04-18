@@ -1,6 +1,8 @@
 package com.sliit.paf.backend.config;
 
 import com.sliit.paf.backend.services.CustomOAuth2UserService;
+import com.sliit.paf.backend.repository.UserRepository;
+import com.sliit.paf.backend.models.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -54,13 +56,16 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final JwtProperties jwtProperties;
     private final ClientRegistrationRepository clientRegistrationRepository;
+    private final UserRepository userRepository;
 
     public SecurityConfig(CustomOAuth2UserService customOAuth2UserService,
                           JwtProperties jwtProperties,
-                          ClientRegistrationRepository clientRegistrationRepository) {
+                          ClientRegistrationRepository clientRegistrationRepository,
+                          UserRepository userRepository) {
         this.customOAuth2UserService = customOAuth2UserService;
         this.jwtProperties = jwtProperties;
         this.clientRegistrationRepository = clientRegistrationRepository;
+        this.userRepository = userRepository;
     }
 
     private SecretKey getSigningKey() {
@@ -249,6 +254,11 @@ public class SecurityConfig {
 
                         String email = claims.getSubject();
                         List<String> roles = claims.get("roles", List.class);
+                        User dbUser = userRepository.findByEmail(email).orElse(null);
+
+                        if (dbUser != null && dbUser.getRoles() != null && !dbUser.getRoles().isEmpty()) {
+                            roles = new ArrayList<>(dbUser.getRoles());
+                        }
 
                         if (email != null && roles != null) {
                             List<SimpleGrantedAuthority> authorities = roles.stream()

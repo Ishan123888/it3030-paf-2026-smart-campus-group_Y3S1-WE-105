@@ -1,6 +1,7 @@
 package com.sliit.paf.backend.controllers;
 
 import com.sliit.paf.backend.dto.BookingDTO;
+import com.sliit.paf.backend.dto.BookingAvailabilityDTO;
 import com.sliit.paf.backend.services.BookingService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -32,6 +34,14 @@ public class BookingController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         return ResponseEntity.ok(bookingService.getMyBookings(principal.getName(), status, resourceId, bookingDate));
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<BookingAvailabilityDTO> getAvailability(
+            @RequestParam String resourceId,
+            @RequestParam LocalDate bookingDate,
+            @RequestParam(required = false) String excludeBookingId) {
+        return ResponseEntity.ok(bookingService.getAvailability(resourceId, bookingDate, excludeBookingId));
     }
 
     @PostMapping
