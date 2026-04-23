@@ -179,9 +179,9 @@ public class UserController {
 
     @DeleteMapping("/users/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable String id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
-        return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+        return ResponseEntity.noContent().build();
     }
 
     // -----------------------------------------------------------------------
