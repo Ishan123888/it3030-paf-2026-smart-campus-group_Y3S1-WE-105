@@ -54,10 +54,18 @@ cd it3030-paf-2026-smart-campus-group4
 Edit `backend/src/main/resources/application.properties`:
 
 ```properties
-spring.data.mongodb.uri=mongodb://localhost:27017/smartcampus
-jwt.secret=your-secret-key-here
-spring.security.oauth2.client.registration.google.client-id=YOUR_GOOGLE_CLIENT_ID
-spring.security.oauth2.client.registration.google.client-secret=YOUR_GOOGLE_CLIENT_SECRET
+# MongoDB Atlas Configuration
+spring.data.mongodb.uri=mongodb+srv://admin:admin@cluster0.yzvhd2j.mongodb.net/smart_campus_db?retryWrites=true&w=majority&appName=Cluster0
+# spring.data.mongodb.uri=mongodb://127.0.0.1:27017/smart_campus_db?retryWrites=true&w=majority&appName=Cluster0
+
+# MongoDB Auditing - Disabled to prevent duplicate key errors during development
+spring.data.mongodb.auto-index-creation=false
+
+# OAuth2 Google Configuration
+spring.security.oauth2.client.registration.google.client-id=193291010316-m148ct3cu7kmsfdbmnbnudkh0ekb6hvg.apps.googleusercontent.com
+spring.security.oauth2.client.registration.google.client-secret=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
+spring.security.oauth2.client.registration.google.scope=openid,profile,email
+spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}
 ```
 
 ### 3. Run the backend
